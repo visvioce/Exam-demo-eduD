@@ -101,7 +101,7 @@
     </div>
 
     <!-- 创建/编辑配置对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑配置' : '添加配置'" width="600px">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑配置' : '添加配置'" width="600px" class="base-dialog">
       <el-form :model="configForm" :rules="currentRules" ref="configFormRef" label-width="100px">
         <el-form-item label="预设模板">
           <el-select v-model="selectedPreset" placeholder="选择预设模板快速填充" clearable @change="handlePresetChange">
@@ -184,7 +184,7 @@
     </el-dialog>
 
     <!-- 添加模型对话框 -->
-    <el-dialog v-model="addModelDialogVisible" title="添加模型" width="400px">
+    <el-dialog v-model="addModelDialogVisible" title="添加模型" width="400px" class="base-dialog">
       <el-form :model="addModelForm" :rules="addModelRules" ref="addModelFormRef" label-width="80px">
         <el-form-item label="模型名称" prop="model">
           <el-select

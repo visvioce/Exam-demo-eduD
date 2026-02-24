@@ -103,7 +103,7 @@
     </el-card>
 
     <!-- 查看题目对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="题目详情" width="700px">
+    <el-dialog v-model="viewDialogVisible" title="题目详情" width="700px" class="base-dialog">
       <el-descriptions :column="2" border v-if="currentQuestion">
         <el-descriptions-item label="题目类型">{{ getTypeName(currentQuestion.type) }}</el-descriptions-item>
         <el-descriptions-item label="难度">{{ getDifficultyName(currentQuestion.difficulty) }}</el-descriptions-item>
@@ -139,7 +139,7 @@
     </el-dialog>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑题目' : '添加题目'" width="800px" top="5vh">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑题目' : '添加题目'" width="800px" top="5vh" class="base-dialog">
       <el-form :model="questionForm" :rules="rules" ref="questionFormRef" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -240,7 +240,7 @@
       width="1100px"
       top="3vh"
       @close="handleCloseAiDialog"
-      class="ai-dialog"
+      class="ai-dialog base-dialog"
     >
       <div class="ai-dialog-content">
         <!-- 左侧：题目预览区域 -->

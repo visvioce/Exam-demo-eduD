@@ -129,7 +129,7 @@
     </template>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑考试' : '创建考试'" width="700px">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑考试' : '创建考试'" width="700px" class="base-dialog">
       <el-form :model="examForm" :rules="rules" ref="examFormRef" label-width="100px">
         <el-form-item label="考试名称" prop="title">
           <el-input v-model="examForm.title" placeholder="请输入考试名称" />
@@ -180,7 +180,7 @@
     </el-dialog>
 
     <!-- 考试详情对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="考试详情" width="700px">
+    <el-dialog v-model="viewDialogVisible" title="考试详情" width="700px" class="base-dialog">
       <el-descriptions :column="2" border v-if="currentExam">
         <el-descriptions-item label="考试名称">{{ currentExam.title }}</el-descriptions-item>
         <el-descriptions-item label="状态">

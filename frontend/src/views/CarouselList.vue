@@ -70,7 +70,7 @@
     <el-empty v-if="!loading && filteredCarousels.length === 0" description="暂无轮播图" />
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑轮播图' : '添加轮播图'" width="600px">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑轮播图' : '添加轮播图'" width="600px" class="base-dialog">
       <el-form :model="carouselForm" :rules="rules" ref="carouselFormRef" label-width="100px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="carouselForm.title" placeholder="请输入轮播图标题" />

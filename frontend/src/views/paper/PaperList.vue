@@ -94,7 +94,7 @@
     </el-card>
 
     <!-- 查看试卷对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="试卷详情" width="95%" top="5vh">
+    <el-dialog v-model="viewDialogVisible" title="试卷详情" width="95%" top="5vh" class="base-dialog">
       <el-descriptions :column="2" border v-if="currentPaper">
         <el-descriptions-item label="试卷名称">{{ currentPaper.name }}</el-descriptions-item>
         <el-descriptions-item label="总分">{{ currentPaper.totalScore }}</el-descriptions-item>
@@ -151,7 +151,7 @@
     </el-dialog>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑试卷' : '创建试卷'" width="800px" top="5vh">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑试卷' : '创建试卷'" width="800px" top="5vh" class="base-dialog">
       <el-tabs v-model="activeTab" v-if="!isEdit">
         <el-tab-pane label="手动组卷" name="manual">
           <ManualPaperForm

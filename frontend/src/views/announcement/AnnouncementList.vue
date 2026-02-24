@@ -106,7 +106,7 @@
     </el-card>
 
     <!-- 查看公告对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="公告详情" width="700px">
+    <el-dialog v-model="viewDialogVisible" title="公告详情" width="700px" class="base-dialog">
       <el-descriptions :column="2" border v-if="currentAnnouncement">
         <el-descriptions-item label="标题" :span="2">{{ currentAnnouncement.title }}</el-descriptions-item>
         <el-descriptions-item label="类型">{{ getTypeName(currentAnnouncement.type) }}</el-descriptions-item>
@@ -120,7 +120,7 @@
     </el-dialog>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑公告' : '发布公告'" width="700px">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑公告' : '发布公告'" width="700px" class="base-dialog">
       <el-form :model="announcementForm" :rules="rules" ref="announcementFormRef" label-width="80px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="announcementForm.title" placeholder="请输入公告标题" />

@@ -53,7 +53,7 @@
     </el-row>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑课程' : '创建课程'" width="600px">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑课程' : '创建课程'" width="600px" class="base-dialog">
       <el-form :model="courseForm" :rules="rules" ref="courseFormRef" label-width="100px">
         <el-form-item label="课程名称" prop="name">
           <el-input v-model="courseForm.name" placeholder="请输入课程名称" />
