@@ -1,0 +1,456 @@
+<template>
+  <div class="user-list">
+    <div class="page-header">
+      <h2>用户管理</h2>
+      <el-button type="primary" @click="handleCreate" v-if="isAdmin">
+        <el-icon><Plus /></el-icon>
+        添加用户
+      </el-button>
+    </div>
+
+    <!-- 搜索栏 -->
+    <el-card class="search-card">
+      <el-form :model="searchForm" label-width="80px">
+        <el-form-item label="关键字">
+          <el-input v-model="searchForm.keyword" placeholder="用户名/昵称" clearable @input="handleKeywordInput" style="width: 200px;" />
+        </el-form-item>
+        <el-form-item label="角色">
+          <div class="filter-tabs">
+            <span 
+              v-for="item in roleOptions" 
+              :key="item.value"
+              :class="['tab-item', { active: searchForm.role === item.value }]"
+              @click="handleRoleChange(item.value)"
+            >
+              {{ item.label }}
+            </span>
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-button @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 用户列表 -->
+    <el-card class="table-card">
+      <el-table :data="users" v-loading="loading" stripe>
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="username" label="用户名" min-width="150" show-overflow-tooltip />
+        <el-table-column label="昵称" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.nickname || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="role" label="角色" width="120">
+          <template #default="{ row }">
+            <el-tag :type="getRoleType(row.role)">{{ getRoleName(row.role) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">
+              {{ getUserStatusName(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="创建时间" min-width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" fixed="right" width="140">
+          <template #default="{ row }">
+            <ActionButtons
+              :show-view="false"
+              @edit="handleEdit(row)"
+              @delete="handleDelete(row)"
+              :show-delete="row.id !== currentUserId"
+            />
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="loadUsers"
+          @current-change="loadUsers"
+        />
+      </div>
+    </el-card>
+
+    <!-- 创建/编辑对话框 -->
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '添加用户'" width="500px">
+      <el-form :model="userForm" :rules="rules" ref="userFormRef" label-width="80px">
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="userForm.username" :disabled="isEdit" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="昵称" prop="nickname">
+          <el-input v-model="userForm.nickname" placeholder="请输入昵称" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password" v-if="!isEdit">
+          <el-input v-model="userForm.password" type="password" placeholder="请输入密码" show-password />
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="userForm.role" placeholder="请选择角色">
+            <el-option label="管理员" value="ADMIN" />
+            <el-option label="教师" value="TEACHER" />
+            <el-option label="学生" value="STUDENT" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="userForm.status" placeholder="请选择状态">
+            <el-option label="正常" value="ACTIVE" />
+            <el-option label="禁用" value="INACTIVE" />
+            <el-option label="锁定" value="SUSPENDED" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { userApi } from '@/api/user'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import { formatDate, getRoleName, getUserStatusName } from '@/utils/format'
+import { getErrorMessage } from '@/utils/error'
+import type { FormInstance, FormRules } from 'element-plus'
+import type { User } from '@/types'
+import ActionButtons from '@/components/ActionButtons.vue'
+
+const authStore = useAuthStore()
+
+const loading = ref(false)
+const submitting = ref(false)
+const users = ref<User[]>([])
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+const userFormRef = ref<FormInstance>()
+
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
+const currentUserId = computed(() => authStore.user?.id)
+
+const roleOptions = [
+  { label: '全部', value: '' },
+  { label: '管理员', value: 'ADMIN' },
+  { label: '教师', value: 'TEACHER' },
+  { label: '学生', value: 'STUDENT' }
+]
+
+const searchForm = reactive({
+  keyword: '',
+  role: ''
+})
+
+const pagination = reactive({
+  current: 1,
+  size: 10,
+  total: 0
+})
+
+const userForm = reactive({
+  id: 0,
+  username: '',
+  nickname: '',
+  password: '',
+  role: 'STUDENT',
+  status: 'ACTIVE'
+})
+
+const rules = reactive<FormRules>({
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+  ],
+  nickname: [
+    { required: true, message: '请输入昵称', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
+  ],
+  status: [
+    { required: true, message: '请选择状态', trigger: 'change' }
+  ]
+})
+
+function getRoleType(role: string) {
+  const map: Record<string, string> = {
+    ADMIN: 'danger',
+    TEACHER: 'warning',
+    STUDENT: 'success'
+  }
+  return map[role] || 'info'
+}
+
+function getStatusType(status: string) {
+  const map: Record<string, string> = {
+    ACTIVE: 'success',
+    INACTIVE: 'danger',
+    SUSPENDED: 'warning'
+  }
+  return map[status] || 'info'
+}
+
+async function loadUsers() {
+  loading.value = true
+  try {
+    const res = await userApi.page({
+      current: pagination.current,
+      size: pagination.size,
+      keyword: searchForm.keyword || undefined,
+      role: searchForm.role || undefined
+    })
+    users.value = res.data.records
+    pagination.total = res.data.total
+  } catch (error) {
+    ElMessage.error('加载用户失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleKeywordInput() {
+  pagination.current = 1
+  loadUsers()
+}
+
+function handleRoleChange(value: string) {
+  void value
+  pagination.current = 1
+  loadUsers()
+}
+
+function handleReset() {
+  searchForm.keyword = ''
+  searchForm.role = ''
+  pagination.current = 1
+  loadUsers()
+}
+
+function handleCreate() {
+  isEdit.value = false
+  Object.assign(userForm, {
+    id: 0,
+    username: '',
+    nickname: '',
+    password: '',
+    role: 'STUDENT',
+    status: 'ACTIVE'
+  })
+  dialogVisible.value = true
+}
+
+function handleEdit(row: User) {
+  isEdit.value = true
+  Object.assign(userForm, {
+    id: row.id,
+    username: row.username,
+    nickname: row.nickname,
+    role: row.role,
+    status: row.status
+  })
+  dialogVisible.value = true
+}
+
+async function handleDelete(row: User) {
+  try {
+    await ElMessageBox.confirm('确定要删除该用户吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await userApi.delete(row.id)
+    ElMessage.success('删除成功')
+    loadUsers()
+  } catch {
+    // 取消删除
+  }
+}
+
+async function handleSubmit() {
+  if (!userFormRef.value) return
+
+  await userFormRef.value.validate(async (valid) => {
+    if (valid) {
+      submitting.value = true
+      try {
+        if (isEdit.value) {
+          await userApi.update(userForm.id, {
+            nickname: userForm.nickname,
+            role: userForm.role as 'ADMIN' | 'TEACHER' | 'STUDENT',
+            status: userForm.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+          })
+          ElMessage.success('更新成功')
+        } else {
+          await userApi.create({
+            username: userForm.username,
+            nickname: userForm.nickname,
+            password: userForm.password,
+            role: userForm.role as 'ADMIN' | 'TEACHER' | 'STUDENT',
+            status: userForm.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+          })
+          ElMessage.success('创建成功')
+        }
+        dialogVisible.value = false
+        loadUsers()
+      } catch (error: unknown) {
+        ElMessage.error(getErrorMessage(error, '操作失败'))
+      } finally {
+        submitting.value = false
+      }
+    }
+  })
+}
+
+onMounted(() => {
+  loadUsers()
+})
+</script>
+
+<style scoped lang="scss">
+@use '@/styles/design-tokens.scss' as *;
+
+.user-list {
+  padding: $spacing-xl;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-xl;
+
+    h2 {
+      margin: 0;
+      font-size: $font-size-3xl;
+      font-weight: $font-weight-medium;
+      color: $text-primary;
+      letter-spacing: -0.5px;
+    }
+  }
+
+  .search-card {
+    margin-bottom: $spacing-xl;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    background: $bg-primary;
+
+    .filter-tabs {
+      display: flex;
+      gap: $spacing-lg;
+
+      .tab-item {
+        cursor: pointer;
+        color: $text-tertiary;
+        font-size: $font-size-sm;
+        padding: $spacing-xs 0;
+        position: relative;
+        transition: color 0.2s ease;
+        user-select: none;
+
+        &:hover {
+          color: $text-secondary;
+        }
+
+        &.active {
+          color: $text-primary;
+          font-weight: 500;
+
+          &::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: $text-primary;
+            border-radius: 1px;
+          }
+        }
+      }
+    }
+
+    // 一行一个筛选项，但标签和内容在同一行
+    :deep(.el-form-item) {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      margin-bottom: $spacing-md;
+    }
+
+    :deep(.el-form-item__label) {
+      white-space: nowrap;
+      padding-right: $spacing-sm;
+    }
+
+    :deep(.el-form-item__content) {
+      flex: 1;
+    }
+  }
+
+  .table-card {
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    background: $bg-primary;
+
+    .pagination {
+      margin-top: $spacing-xl;
+      padding: $spacing-lg;
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid $border-light;
+    }
+  }
+}
+
+// 对话框样式优化
+:deep(.el-dialog) {
+  .el-dialog__header {
+    border-bottom: 1px solid $border-light;
+    padding: $spacing-lg $spacing-xl;
+  }
+
+  .el-dialog__body {
+    padding: $spacing-xl;
+  }
+
+  .el-dialog__footer {
+    border-top: 1px solid $border-light;
+    padding: $spacing-lg $spacing-xl;
+  }
+}
+
+// 响应式
+@media (max-width: $breakpoint-md) {
+  .user-list {
+    padding: $spacing-md;
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-md;
+
+      h2 {
+        font-size: $font-size-2xl;
+      }
+    }
+  }
+}
+</style>

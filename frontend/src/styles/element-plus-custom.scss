@@ -1,0 +1,573 @@
+@use 'sass:color';
+@use './design-tokens.scss' as *;
+
+// ========================================
+// Element Plus 组件样式覆盖
+// Black/White/Gray Minimalist Theme
+// ========================================
+
+// ===== 按钮 =====
+.el-button {
+  border-radius: $radius-sm;
+  font-weight: 500;
+  transition: all $transition-fast;
+
+  // 主要按钮 - 黑底白字
+  &--default,
+  &--primary {
+    background-color: $black;
+    border-color: $black;
+    color: #FFFFFF;
+
+    &:hover,
+    &:focus {
+      background-color: rgba(0, 0, 0, 0.85);
+      border-color: rgba(0, 0, 0, 0.85);
+      color: #FFFFFF;
+    }
+
+    &:active {
+      background-color: rgba(0, 0, 0, 0.7);
+      border-color: rgba(0, 0, 0, 0.7);
+    }
+
+    &.is-disabled {
+      background-color: $gray-300;
+      border-color: $gray-300;
+      color: $gray-500;
+    }
+  }
+
+  // 次主要按钮 - 白底黑框
+  &--success {
+    background-color: #FFFFFF;
+    border-color: $gray-900;
+    color: $gray-900;
+
+    &:hover,
+    &:focus {
+      background-color: $bg-hover;
+      border-color: $black;
+      color: $black;
+    }
+
+    &.is-disabled {
+      background-color: $bg-primary;
+      border-color: $gray-300;
+      color: $gray-400;
+    }
+  }
+
+  // 次要按钮 - 纯文本
+  &.el-button--text {
+    background-color: transparent;
+    border-color: transparent;
+    color: $text-secondary;
+
+    &:hover,
+    &:focus {
+      background-color: $bg-hover;
+      color: $text-primary;
+    }
+
+    &.is-disabled {
+      color: $gray-400;
+    }
+  }
+
+  // 链接按钮
+  &.el-button--link {
+    color: $text-primary;
+
+    &:hover {
+      color: $black;
+    }
+  }
+
+  // 危险按钮 - 保留红色警告
+  &--danger {
+    background-color: #FFFFFF;
+    border-color: $danger;
+    color: $danger;
+
+    &:hover,
+    &:focus {
+      background-color: $danger-bg;
+      border-color: color.adjust($danger, $lightness: -10%);
+      color: color.adjust($danger, $lightness: -10%);
+    }
+
+    &.is-disabled {
+      background-color: $bg-primary;
+      border-color: $gray-300;
+      color: $gray-400;
+    }
+  }
+
+  // 警告按钮 - 灰色
+  &--warning {
+    background-color: #FFFFFF;
+    border-color: $gray-500;
+    color: $gray-700;
+
+    &:hover,
+    &:focus {
+      background-color: $bg-hover;
+      border-color: $gray-900;
+      color: $black;
+    }
+  }
+
+  // 信息按钮 - 灰色
+  &--info {
+    background-color: #FFFFFF;
+    border-color: $border-input;
+    color: $text-secondary;
+
+    &:hover,
+    &:focus {
+      background-color: $bg-hover;
+      border-color: $text-primary;
+      color: $text-primary;
+    }
+  }
+
+  // 大号按钮
+  &--large {
+    height: 44px;
+    padding: 0 20px;
+    font-size: $font-size-base;
+  }
+
+  // 小号按钮
+  &--small {
+    height: 28px;
+    padding: 0 12px;
+    font-size: $font-size-sm;
+  }
+}
+
+// ===== 输入框 =====
+.el-input {
+  &__wrapper {
+    border-radius: $radius-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      box-shadow: none;
+    }
+
+    &.is-focus {
+      box-shadow: none;
+    }
+  }
+
+  &__inner {
+    color: $text-primary;
+    &::placeholder {
+      color: $gray-400;
+    }
+  }
+
+  &.is-disabled {
+    .el-input__wrapper {
+      background-color: $bg-secondary;
+      box-shadow: none;
+    }
+
+    .el-input__inner {
+      color: $gray-400;
+    }
+  }
+}
+
+// ===== 卡片 =====
+.el-card {
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  box-shadow: none;
+  background-color: #FFFFFF;
+
+  &__header {
+    border-bottom: 1px solid $border-light;
+    padding: $spacing-lg;
+    font-weight: 500;
+    color: $text-primary;
+    font-size: $font-size-lg;
+  }
+
+  &__body {
+    padding: $spacing-xl;
+    color: $text-secondary;
+  }
+}
+
+// ===== 表格 =====
+.el-table {
+  border-radius: $radius-md;
+  overflow: hidden;
+
+  &::before {
+    display: none;
+  }
+
+  th.el-table__cell {
+    background-color: $bg-secondary;
+    color: $text-primary;
+    font-weight: 500;
+    border-bottom: 1px solid $border-color;
+  }
+
+  td.el-table__cell {
+    color: $text-secondary;
+    border-bottom: 1px solid $border-light;
+  }
+
+  &--enable-row-hover {
+    .el-table__body tr:hover > td {
+      background-color: $bg-hover;
+    }
+  }
+
+  &--striped {
+    .el-table__body tr.el-table__row--striped td {
+      background-color: $bg-secondary;
+    }
+  }
+
+  // 移除单元格边框
+  &__border {
+    border: none;
+  }
+}
+
+// ===== 菜单 =====
+.el-menu {
+  border-right: 1px solid $border-color;
+
+  .el-menu-item {
+    color: $text-tertiary;
+    border-radius: $radius-sm;
+    margin: 0 $spacing-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: $bg-hover;
+      color: $text-secondary;
+    }
+
+    &.is-active {
+      background-color: $bg-hover;
+      color: $text-primary;
+      font-weight: 500;
+      position: relative;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: -$spacing-md;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 60%;
+        background-color: $black;
+        border-radius: 0 2px 2px 0;
+      }
+    }
+  }
+
+  .el-sub-menu__title {
+    color: $text-tertiary;
+
+    &:hover {
+      background-color: $bg-hover;
+      color: $text-secondary;
+    }
+
+    &.is-active {
+      color: $text-primary;
+      font-weight: 500;
+    }
+  }
+}
+
+// 横向菜单
+.el-menu--horizontal {
+  border-bottom: 1px solid $border-color;
+  border-right: none;
+
+  .el-menu-item {
+    margin: 0;
+
+    &.is-active {
+      &::before {
+        display: none;
+      }
+
+      border-bottom: 2px solid $black;
+    }
+  }
+}
+
+// ===== 对话框 =====
+.el-dialog {
+  border-radius: $radius-md;
+  box-shadow: none;
+
+  &__header {
+    border-bottom: 1px solid $border-light;
+    padding: $spacing-lg $spacing-xl;
+    margin: 0;
+  }
+
+  &__title {
+    color: $text-primary;
+    font-weight: 600;
+    font-size: $font-size-xl;
+  }
+
+  &__body {
+    padding: $spacing-xl;
+    color: $text-secondary;
+  }
+
+  &__footer {
+    border-top: 1px solid $border-light;
+    padding: $spacing-lg $spacing-xl;
+  }
+}
+
+// ===== 下拉菜单 =====
+.el-dropdown-menu {
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  box-shadow: none;
+  padding: $spacing-xs 0;
+
+  .el-dropdown-menu__item {
+    color: $text-secondary;
+    padding: $spacing-sm $spacing-lg;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $bg-hover;
+      color: $text-primary;
+    }
+
+    &.is-disabled {
+      color: $text-quaternary;
+    }
+  }
+
+  &__item--divided {
+    border-top: 1px solid $border-light;
+    margin-top: $spacing-xs;
+    padding-top: $spacing-xs;
+  }
+}
+
+// ===== 标签 =====
+// 注意：不设置全局 .el-tag 样式，避免影响筛选标签的选中状态
+// 只针对特定类型的标签进行样式覆盖
+
+// 成功标签 - 深灰
+.el-tag--success {
+  background-color: $gray-100;
+  color: $gray-700;
+}
+
+// 信息标签 - 中灰
+.el-tag--info {
+  background-color: $gray-50;
+  color: $gray-500;
+}
+
+// 警告标签 - 浅灰
+.el-tag--warning {
+  background-color: $warning-bg;
+  color: $warning;
+}
+
+// 危险标签 - 保留红色
+.el-tag--danger {
+  background-color: $danger-bg;
+  color: $danger;
+}
+
+// AI 标签 - 黑色
+.ai-tag {
+  background-color: $black;
+  color: #FFFFFF;
+}
+
+// ===== 表单 =====
+.el-form {
+  &-item__label {
+    color: $text-tertiary;
+    font-weight: 500;
+    font-size: $font-size-sm;
+  }
+
+  &-item__error {
+    color: $danger;
+    font-size: $font-size-xs;
+  }
+}
+
+// ===== 选择器 =====
+.el-select {
+  &__wrapper {
+    border-radius: $radius-sm;
+
+    &:hover {
+      box-shadow: none;
+    }
+
+    &.is-focus {
+      box-shadow: none;
+    }
+  }
+}
+
+// ===== 日期选择器 =====
+.el-picker-panel {
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  box-shadow: none;
+}
+
+// ===== 开关 =====
+.el-switch {
+  &.is-checked {
+    .el-switch__core {
+      background-color: $black;
+      border-color: $black;
+    }
+  }
+}
+
+// ===== 消息提示 =====
+.el-message {
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+  box-shadow: none;
+
+  &--success {
+    background-color: #FFFFFF;
+    border: 1px solid $gray-200;
+    color: $gray-700;
+  }
+
+  &--info {
+    background-color: #FFFFFF;
+    border: 1px solid $gray-200;
+    color: $gray-700;
+  }
+
+  &--warning {
+    background-color: #FFFFFF;
+    border: 1px solid $gray-200;
+    color: $warning;
+  }
+
+  &--error {
+    background-color: #FFFFFF;
+    border: 1px solid $gray-200;
+    color: $danger;
+  }
+}
+
+// ===== 通知 =====
+.el-notification {
+  border-radius: $radius-md;
+  border: 1px solid $border-color;
+  box-shadow: none;
+}
+
+// ===== 面包屑 =====
+.el-breadcrumb__inner {
+  color: $text-tertiary;
+
+  &:hover {
+    color: $text-primary;
+  }
+
+  &.is-link {
+    color: $text-tertiary;
+  }
+}
+
+// ===== 加载中 =====
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+// ===== 文字提示 =====
+.el-tooltip__popper {
+  background-color: $gray-900;
+  color: #FFFFFF;
+  border-radius: $radius-sm;
+  padding: $spacing-sm $spacing-md;
+}
+
+// ===== 头像 =====
+.el-avatar {
+  background-color: $bg-hover;
+  color: $text-tertiary;
+}
+
+// ===== 页头 =====
+.el-page-header {
+  &__title {
+    color: $text-primary;
+    font-weight: 600;
+  }
+
+  &__content {
+    color: $text-secondary;
+  }
+}
+
+// ===== 空状态 =====
+.el-empty {
+  &__description {
+    color: $text-tertiary;
+  }
+}
+
+// ===== 统计类数字 =====
+.stat-number {
+  font-size: $font-size-3xl;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.stat-label {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+// ===== AI 功能相关样式 =====
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background-color: $black;
+  color: #FFFFFF;
+  border-radius: $radius-full;
+  font-size: $font-size-xs;
+  font-weight: 500;
+}
+
+.ai-card-badge {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  padding: 4px 10px;
+  background-color: $black;
+  color: #FFFFFF;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  box-shadow: none;
+}

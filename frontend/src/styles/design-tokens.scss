@@ -1,0 +1,195 @@
+/* ========================================
+   Design Tokens - Notion 风格极简设计
+   少即是多，黑白灰为主
+   ======================================== */
+
+// ===== 颜色系统 - 黑白灰简约风格 =====
+
+// 主色调 - 黑色系
+$black: #000000;
+$gray-900: #1A1A1A;
+$gray-700: #37352F;
+$gray-500: #787774;
+$gray-400: #C0C0C0;
+$gray-300: #D8DCE0;
+$gray-200: #E0E0E0;
+$gray-100: #F0F0F0;
+$gray-50: #FAFAFA;
+$gray-25: #F5F5F5;
+
+// 背景
+$bg-page: #FFFFFF;            // 页面背景
+$bg-primary: #FFFFFF;
+$bg-secondary: #FAFAFA;
+$bg-hover: #F5F5F5;
+$bg-active: #E8EAED;
+$bg-tertiary: #F5F5F5;       // 第三级背景
+
+// 文字
+$text-primary: #1A1A1A;
+$text-secondary: #37352F;
+$text-tertiary: #787774;
+$text-quaternary: #C0C0C0;
+$text-disabled: #E0E0E0;
+
+// 边框
+$border-color: #E0E0E0;
+$border-light: #F0F0F0;
+$border-input: #D8DCE0;
+
+// 功能色 - 仅保留危险操作使用红色
+$danger: #DC2626;
+$danger-bg: #FFE3E3;
+$warning: #787774;
+$warning-bg: #FFF4DA;
+
+// 主色调 - 黑色作为主色
+$primary: #000000;
+$primary-light: rgba(0, 0, 0, 0.85);
+$primary-bg: #F5F5F5;
+
+// 成功色 - 深灰
+$success: #37352F;
+$success-bg: #F0F0F0;
+
+// 元素 Plus 覆盖变量 - 颜色
+$el-color-primary: #000000;
+$el-color-primary-light-9: #F5F5F5;
+$el-color-primary-dark-2: #1A1A1A;
+$el-color-success: #37352F;
+$el-color-warning: #787774;
+$el-color-danger: #DC2626;
+$el-color-info: #787774;
+
+$el-text-color-primary: #1A1A1A;
+$el-text-color-regular: #37352F;
+$el-text-color-secondary: #787774;
+$el-text-color-placeholder: #C0C0C0;
+$el-text-color-disabled: #E0E0E0;
+
+$el-border-color: #E0E0E0;
+$el-border-color-light: #F0F0F0;
+$el-border-color-lighter: #F0F0F0;
+$el-border-color-extra-light: #FAFAFA;
+$el-border-color-dark: #D8DCE0;
+$el-border-color-darker: #1A1A1A;
+
+$el-bg-color: #FFFFFF;
+$el-bg-color-page: #FAFAFA;
+$el-bg-color-overlay: #F5F5F5;
+
+$el-fill-color-blank: #FFFFFF;
+$el-fill-color-light: #F5F5F5;
+$el-fill-color-lighter: #FAFAFA;
+$el-fill-color-extra-light: #FAFAFA;
+$el-fill-color-dark: #E8EAED;
+$el-fill-color-darker: #E0E0E0;
+
+// ===== 阴影系统 - 完全平面化（Notion 风格）=====
+$shadow-none: none;
+$shadow-xs: none;
+$shadow-sm: none;
+$shadow-md: none;
+
+// 元素 Plus 阴影覆盖
+$el-box-shadow-light: $shadow-none;
+$el-box-shadow-lighter: $shadow-none;
+$el-box-shadow-dark: $shadow-none;
+$el-box-shadow-base: $shadow-none;
+
+// 移除所有渐变 - Notion 不使用渐变
+
+// ===== 间距系统 =====
+$spacing-xs: 2px;
+$spacing-sm: 4px;
+$spacing-md: 8px;
+$spacing-lg: 16px;
+$spacing-xl: 24px;
+$spacing-2xl: 32px;
+$spacing-3xl: 48px;
+$spacing-4xl: 64px;
+
+// ===== 圆角系统 - 更柔和的圆角 =====
+$radius-none: 0;
+$radius-sm: 4px;
+$radius-md: 6px;
+$radius-lg: 8px;
+$radius-full: 9999px;
+
+// 元素 Plus 圆角覆盖
+$el-border-radius-base: 4px;
+$el-border-radius-small: 2px;
+$el-border-radius-round: 9999px;
+$el-border-radius-circle: 9999px;
+
+// ===== 字体系统 =====
+$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+               'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'PingFang SC',
+               'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+
+$font-size-xs: 11px;
+$font-size-sm: 13px;
+$font-size-base: 15px;
+$font-size-lg: 17px;
+$font-size-xl: 19px;
+$font-size-2xl: 22px;
+$font-size-3xl: 28px;
+$font-size-4xl: 36px;
+
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+
+// 元素 Plus 字体覆盖
+$el-font-size-base: 15px;
+$el-font-size-small: 13px;
+$el-font-size-large: 17px;
+$el-font-size-extra-large: 19px;
+
+$el-font-weight-primary: 500;
+$el-font-weight-secondary: 400;
+$el-font-weight-base: 400;
+$el-font-weight-bold: 600;
+
+$line-height-tight: 1.3;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.7;
+
+// ===== 过渡动画 =====
+$transition-fast: 0.1s ease;
+$transition-base: 0.2s ease;  // 极简过渡
+
+// ===== 响应式断点 =====
+$breakpoint-xs: 480px;
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+
+// ===== Z-index 系统 =====
+$z-dropdown: 1000;
+$z-modal: 1100;
+$z-message: 1200;
+
+// ===== 表单 =====
+$input-height: 36px;
+$input-height-lg: 44px;
+$input-radius: $radius-md;
+
+// ===== 卡片 =====
+$card-radius: $radius-md;
+
+// 按钮 =====
+$btn-radius: $radius-md;
+$btn-height: 36px;
+$btn-height-lg: 44px;
+
+// ===== 表格 =====
+$table-header-bg: $bg-secondary;
+$table-row-hover: $bg-tertiary;
+$table-border: $border-color;
+
+// ===== 导航 =====
+$nav-width: 240px;
+$nav-width-collapsed: 60px;
+$nav-height: 48px;
