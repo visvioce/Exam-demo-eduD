@@ -1,5 +1,5 @@
 <template>
-  <div class="exam-detail">
+  <div class="exam-detail base-detail-page">
     <div class="page-header">
       <el-page-header @back="goBack">
         <template #content>
@@ -63,6 +63,7 @@
       title="考试须知"
       width="500px"
       :close-on-click-modal="false"
+      class="base-dialog"
     >
       <div class="instructions-content">
         <el-alert
@@ -322,10 +323,10 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
+@use '@/styles/views/base-detail.scss';
 
 .exam-detail {
-  padding: $spacing-xl;
-
   .section-title {
     margin-top: $spacing-xl;
     margin-bottom: $spacing-sm;
@@ -336,17 +337,6 @@ onMounted(() => {
 
   .instructions-alert {
     margin-bottom: $spacing-md;
-  }
-
-  .page-header {
-    margin-bottom: $spacing-xl;
-
-    h2 {
-      font-size: $font-size-3xl;
-      font-weight: $font-weight-medium;
-      color: $text-primary;
-      letter-spacing: -0.5px;
-    }
   }
 
   .actions {
@@ -427,14 +417,6 @@ onMounted(() => {
 // 响应式
 @media (max-width: $breakpoint-md) {
   .exam-detail {
-    padding: $spacing-md;
-
-    .page-header {
-      h2 {
-        font-size: $font-size-2xl;
-      }
-    }
-
     .dialog-footer {
       flex-direction: column;
       align-items: stretch;

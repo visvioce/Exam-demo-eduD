@@ -1,5 +1,5 @@
 <template>
-  <div class="profile">
+  <div class="profile base-detail-page">
     <el-row :gutter="20">
       <!-- 左侧用户信息 -->
       <el-col :span="8">
@@ -349,6 +349,7 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-detail.scss';
 
 .profile {
   .user-card {

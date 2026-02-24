@@ -1,5 +1,5 @@
 <template>
-  <div class="course-detail">
+  <div class="course-detail base-detail-page">
     <div class="page-header">
       <el-page-header @back="goBack">
         <template #content>
@@ -101,7 +101,7 @@
     </el-card>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" title="编辑课程" width="500px">
+    <el-dialog v-model="editDialogVisible" title="编辑课程" width="500px" class="base-dialog">
       <el-form :model="courseForm" :rules="rules" ref="courseFormRef" label-width="80px">
         <el-form-item label="课程名称" prop="name">
           <el-input v-model="courseForm.name" placeholder="请输入课程名称" />
@@ -375,21 +375,10 @@ watchEffect(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
+@use '@/styles/views/base-detail.scss';
 
 .course-detail {
-  padding: $spacing-xl;
-
-  .page-header {
-    margin-bottom: $spacing-xl;
-
-    h2 {
-      font-size: $font-size-3xl;
-      font-weight: $font-weight-medium;
-      color: $text-primary;
-      letter-spacing: -0.5px;
-    }
-  }
-
   .actions {
     margin-top: $spacing-xl;
     text-align: center;
@@ -414,19 +403,6 @@ watchEffect(() => {
       .member-count {
         color: $text-tertiary;
         font-size: $font-size-sm;
-      }
-    }
-  }
-}
-
-// 响应式
-@media (max-width: $breakpoint-md) {
-  .course-detail {
-    padding: $spacing-md;
-
-    .page-header {
-      h2 {
-        font-size: $font-size-2xl;
       }
     }
   }
