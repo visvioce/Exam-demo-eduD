@@ -1,5 +1,5 @@
 <template>
-  <div class="carousel-list">
+  <div class="carousel-list base-list-page">
     <div class="page-header">
       <h2>轮播图管理</h2>
       <el-button type="primary" @click="handleCreate" v-if="hasPermission(['ADMIN'])">
@@ -290,6 +290,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
 
 .carousel-list {
   padding: $spacing-xl;

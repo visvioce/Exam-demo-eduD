@@ -1,5 +1,5 @@
 <template>
-  <div class="course-list">
+  <div class="course-list base-list-page">
     <div class="page-header">
       <h2>{{ isStudent ? '我的课程' : '课程管理' }}</h2>
       <el-button type="primary" @click="handleCreate" v-if="hasPermission(['ADMIN', 'TEACHER'])">
@@ -294,6 +294,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
 
 .course-list {
   padding: $spacing-xl;

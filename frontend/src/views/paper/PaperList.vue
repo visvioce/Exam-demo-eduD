@@ -1,5 +1,5 @@
 <template>
-  <div class="paper-list">
+  <div class="paper-list base-list-page">
     <div class="page-header">
       <h2>试卷管理</h2>
       <el-button type="primary" @click="handleCreate" v-if="hasPermission(['ADMIN', 'TEACHER'])">
@@ -492,6 +492,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
 
 .paper-list {
   padding: $spacing-xl;

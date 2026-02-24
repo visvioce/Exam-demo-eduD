@@ -1,5 +1,5 @@
 <template>
-  <div class="question-list">
+  <div class="question-list base-list-page">
     <div class="page-header">
       <h2>题库管理</h2>
       <div class="header-actions">
@@ -863,6 +863,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
 
 .question-list {
   padding: $spacing-xl;

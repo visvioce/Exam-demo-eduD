@@ -1,5 +1,5 @@
 <template>
-  <div class="user-list">
+  <div class="user-list base-list-page">
     <div class="page-header">
       <h2>用户管理</h2>
       <el-button type="primary" @click="handleCreate" v-if="isAdmin">
@@ -327,6 +327,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
 
 .user-list {
   padding: $spacing-xl;

@@ -1,5 +1,5 @@
 <template>
-  <div class="announcement-list">
+  <div class="announcement-list base-list-page">
     <div class="page-header">
       <h2>公告管理</h2>
       <el-button type="primary" @click="handleCreate" v-if="hasPermission(['ADMIN', 'TEACHER'])">
@@ -417,6 +417,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
 
 .announcement-list {
   padding: $spacing-xl;

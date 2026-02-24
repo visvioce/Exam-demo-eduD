@@ -91,6 +91,70 @@
       }
     }
   }
+
+  // 搜索卡片
+  .search-card {
+    margin-bottom: $spacing-lg;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    box-shadow: none;
+
+    .el-card__body {
+      padding: $spacing-lg;
+    }
+
+    .el-form {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: $spacing-sm $spacing-lg;
+
+      .el-form-item {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .search-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-sm $spacing-lg;
+  }
+
+  .filter-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+
+    .tab-item {
+      padding: $spacing-xs $spacing-md;
+      border: 1px solid $border-color;
+      border-radius: $radius-full;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      cursor: pointer;
+      transition: all $transition-fast;
+      user-select: none;
+
+      &:hover {
+        border-color: $text-tertiary;
+        color: $text-primary;
+      }
+
+      &.active {
+        border-color: $text-primary;
+        background: $bg-hover;
+        color: $text-primary;
+      }
+    }
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: $spacing-lg;
+  }
 }
 
 // 通用对话框样式
@@ -200,6 +264,20 @@
         // 小屏幕隐藏某些列
         .hide-mobile {
           display: none;
+        }
+      }
+    }
+
+    .search-card {
+      .el-card__body {
+        padding: $spacing-md;
+      }
+
+      .el-form {
+        gap: $spacing-sm;
+
+        .el-form-item {
+          width: 100%;
         }
       }
     }

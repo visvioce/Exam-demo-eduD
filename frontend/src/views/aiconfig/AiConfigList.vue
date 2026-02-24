@@ -1,5 +1,5 @@
 <template>
-  <div class="ai-config-list">
+  <div class="ai-config-list base-list-page">
     <div class="page-header">
       <h2>AI 配置管理</h2>
       <el-button type="primary" @click="handleCreate">
@@ -569,6 +569,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/base-list.scss';
 
 .ai-config-list {
   padding: $spacing-xl;
