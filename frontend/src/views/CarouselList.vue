@@ -193,7 +193,7 @@ function handleKeywordInput() {
 }
 
 function handleStatusChange(value: string) {
-  void value
+  searchForm.status = value
   // 状态点击时，使用计算属性自动过滤
 }
 

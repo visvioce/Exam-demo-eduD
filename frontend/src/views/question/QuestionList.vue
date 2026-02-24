@@ -552,13 +552,13 @@ async function loadSubjects() {
 }
 
 function filterTypeChange(value: string) {
-  void value
+  searchForm.type = value
   pagination.current = 1
   loadQuestions()
 }
 
 function filterDifficultyChange(value: string) {
-  void value
+  searchForm.difficulty = value
   pagination.current = 1
   loadQuestions()
 }
