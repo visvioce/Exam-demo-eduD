@@ -572,8 +572,6 @@ onMounted(() => {
 @use '@/styles/views/base-list.scss';
 
 .ai-config-list {
-  padding: $spacing-xl;
-
   .model-select {
     width: 300px;
   }
@@ -606,20 +604,6 @@ onMounted(() => {
 
   .model-input {
     flex: 1;
-  }
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-xl;
-
-    h2 {
-      margin: 0;
-      font-size: $font-size-3xl;
-      font-weight: $font-weight-medium;
-      color: $text-primary;
-    }
   }
 
   // 全局模型切换器
@@ -823,23 +807,6 @@ onMounted(() => {
   }
 }
 
-// 对话框样式
-:deep(.el-dialog) {
-  .el-dialog__header {
-    border-bottom: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-
-  .el-dialog__body {
-    padding: $spacing-xl;
-  }
-
-  .el-dialog__footer {
-    border-top: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-}
-
 // 模型编辑器样式
 .models-editor {
   width: 100%;
@@ -889,20 +856,4 @@ onMounted(() => {
   }
 }
 
-// 响应式
-@media (max-width: $breakpoint-md) {
-  .ai-config-list {
-    padding: $spacing-md;
-
-    .page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-md;
-
-      h2 {
-        font-size: $font-size-2xl;
-      }
-    }
-  }
-}
 </style>

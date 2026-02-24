@@ -297,25 +297,8 @@ onMounted(() => {
 @use '@/styles/views/base-list.scss';
 
 .course-list {
-  padding: $spacing-xl;
-
   .full-width {
     width: 100%;
-  }
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-xl;
-
-    h2 {
-      margin: 0;
-      font-size: $font-size-3xl;
-      font-weight: $font-weight-medium;
-      color: $text-primary;
-      letter-spacing: -0.5px;
-    }
   }
 
   .course-card {
@@ -365,40 +348,6 @@ onMounted(() => {
     &__actions {
       display: flex;
       gap: $spacing-sm;
-    }
-  }
-}
-
-// 对话框样式优化
-:deep(.el-dialog) {
-  .el-dialog__header {
-    border-bottom: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-
-  .el-dialog__body {
-    padding: $spacing-xl;
-  }
-
-  .el-dialog__footer {
-    border-top: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-}
-
-// 响应式
-@media (max-width: $breakpoint-md) {
-  .course-list {
-    padding: $spacing-md;
-
-    .page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-md;
-
-      h2 {
-        font-size: $font-size-2xl;
-      }
     }
   }
 }

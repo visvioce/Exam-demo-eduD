@@ -495,64 +495,7 @@ onMounted(() => {
 @use '@/styles/views/base-list.scss';
 
 .paper-list {
-  padding: $spacing-xl;
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-xl;
-
-    h2 {
-      margin: 0;
-      font-size: $font-size-3xl;
-      font-weight: $font-weight-medium;
-      color: $text-primary;
-      letter-spacing: -0.5px;
-    }
-  }
-
   .search-card {
-    margin-bottom: $spacing-xl;
-    border: 1px solid $border-color;
-    border-radius: $radius-md;
-    background: $bg-primary;
-
-    .filter-tabs {
-      display: flex;
-      gap: $spacing-lg;
-
-      .tab-item {
-        cursor: pointer;
-        color: $text-tertiary;
-        font-size: $font-size-sm;
-        padding: $spacing-xs 0;
-        position: relative;
-        transition: color 0.2s ease;
-        user-select: none;
-
-        &:hover {
-          color: $text-secondary;
-        }
-
-        &.active {
-          color: $text-primary;
-          font-weight: 500;
-
-          &::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: $text-primary;
-            border-radius: 1px;
-          }
-        }
-      }
-    }
-
     .search-form {
       :deep(.el-form-item) {
         display: flex;
@@ -585,9 +528,6 @@ onMounted(() => {
   }
 
   .table-card {
-    border: 1px solid $border-color;
-    border-radius: $radius-md;
-    background: $bg-primary;
     margin-bottom: $spacing-xl;
 
     :deep(.el-table) {
@@ -597,13 +537,6 @@ onMounted(() => {
       }
     }
 
-    .pagination {
-      margin-top: $spacing-xl;
-      padding: $spacing-lg;
-      display: flex;
-      justify-content: flex-end;
-      border-top: 1px solid $border-light;
-    }
   }
 
   .questions-detail-list {
@@ -682,40 +615,6 @@ onMounted(() => {
           color: $text-primary;
           margin-right: $spacing-sm;
         }
-      }
-    }
-  }
-}
-
-// 对话框样式优化
-:deep(.el-dialog) {
-  .el-dialog__header {
-    border-bottom: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-
-  .el-dialog__body {
-    padding: $spacing-xl;
-  }
-
-  .el-dialog__footer {
-    border-top: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-}
-
-// 响应式
-@media (max-width: $breakpoint-md) {
-  .paper-list {
-    padding: $spacing-md;
-
-    .page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-md;
-
-      h2 {
-        font-size: $font-size-2xl;
       }
     }
   }

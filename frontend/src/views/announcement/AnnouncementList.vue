@@ -420,138 +420,14 @@ onMounted(() => {
 @use '@/styles/views/base-list.scss';
 
 .announcement-list {
-  padding: $spacing-xl;
-
   .full-width {
     width: 100%;
-  }
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-xl;
-
-    h2 {
-      margin: 0;
-      font-size: $font-size-3xl;
-      font-weight: $font-weight-medium;
-      color: $text-primary;
-      letter-spacing: -0.5px;
-    }
-  }
-
-  .search-card {
-    margin-bottom: $spacing-xl;
-    border: 1px solid $border-color;
-    border-radius: $radius-md;
-    background: $bg-primary;
-
-    .filter-tabs {
-      display: flex;
-      gap: $spacing-lg;
-
-      .tab-item {
-        cursor: pointer;
-        color: $text-tertiary;
-        font-size: $font-size-sm;
-        padding: $spacing-xs 0;
-        position: relative;
-        transition: color 0.2s ease;
-        user-select: none;
-
-        &:hover {
-          color: $text-secondary;
-        }
-
-        &.active {
-          color: $text-primary;
-          font-weight: 500;
-
-          &::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: $text-primary;
-            border-radius: 1px;
-          }
-        }
-      }
-    }
-
-    // 一行一个筛选项，但标签和内容在同一行
-    :deep(.el-form-item) {
-      display: flex;
-      align-items: center;
-      flex-wrap: nowrap;
-      margin-bottom: $spacing-md;
-    }
-
-    :deep(.el-form-item__label) {
-      white-space: nowrap;
-      padding-right: $spacing-sm;
-    }
-
-    :deep(.el-form-item__content) {
-      flex: 1;
-    }
-  }
-
-  .table-card {
-    border: 1px solid $border-color;
-    border-radius: $radius-md;
-    background: $bg-primary;
-
-    .pagination {
-      margin-top: $spacing-xl;
-      padding: $spacing-lg;
-      display: flex;
-      justify-content: flex-end;
-      border-top: 1px solid $border-light;
-    }
   }
 
   .announcement-content {
     white-space: pre-wrap;
     line-height: $line-height-relaxed;
     color: $text-secondary;
-  }
-}
-
-// 对话框样式优化
-:deep(.el-dialog) {
-  .el-dialog__header {
-    border-bottom: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-
-  .el-dialog__body {
-    padding: $spacing-xl;
-  }
-
-  .el-dialog__footer {
-    border-top: 1px solid $border-light;
-    padding: $spacing-lg $spacing-xl;
-  }
-}
-
-// 响应式
-@media (max-width: $breakpoint-md) {
-  .announcement-list {
-    padding: $spacing-md;
-
-    .page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-md;
-
-      h2 {
-        font-size: $font-size-2xl;
-      }
-    }
   }
 }
 </style>
