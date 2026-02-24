@@ -312,13 +312,13 @@ function handleKeywordInput() {
 }
 
 function filterTypeChange(value: string) {
-  searchForm.type = value
+  searchForm.type = searchForm.type === value ? '' : value
   pagination.current = 1
   loadAnnouncements()
 }
 
 function filterStatusChange(value: string) {
-  searchForm.status = value
+  searchForm.status = searchForm.status === value ? '' : value
   pagination.current = 1
   loadAnnouncements()
 }

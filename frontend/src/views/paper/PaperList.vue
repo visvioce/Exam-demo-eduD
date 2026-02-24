@@ -387,13 +387,13 @@ function handleKeywordInput() {
 }
 
 function handleTypeChange(value: string) {
-  searchForm.type = value
+  searchForm.type = searchForm.type === value ? '' : value
   pagination.current = 1
   loadPapers()
 }
 
 function handleStatusChange(value: string) {
-  searchForm.status = value
+  searchForm.status = searchForm.status === value ? '' : value
   pagination.current = 1
   loadPapers()
 }

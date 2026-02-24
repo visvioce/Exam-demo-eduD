@@ -411,7 +411,7 @@ function handleCourseChange(value: number | null) {
 }
 
 function handleStatusChange(value: string) {
-  searchForm.status = value
+  searchForm.status = searchForm.status === value ? '' : value
   // 学生视图使用前端筛选，不需要重新加载数据
   if (isStudent.value) return
   pagination.current = 1

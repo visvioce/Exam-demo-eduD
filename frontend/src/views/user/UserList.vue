@@ -233,7 +233,7 @@ function handleKeywordInput() {
 }
 
 function handleRoleChange(value: string) {
-  searchForm.role = value
+  searchForm.role = searchForm.role === value ? '' : value
   pagination.current = 1
   loadUsers()
 }

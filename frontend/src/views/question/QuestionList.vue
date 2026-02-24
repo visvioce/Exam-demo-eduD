@@ -552,13 +552,13 @@ async function loadSubjects() {
 }
 
 function filterTypeChange(value: string) {
-  searchForm.type = value
+  searchForm.type = searchForm.type === value ? '' : value
   pagination.current = 1
   loadQuestions()
 }
 
 function filterDifficultyChange(value: string) {
-  searchForm.difficulty = value
+  searchForm.difficulty = searchForm.difficulty === value ? '' : value
   pagination.current = 1
   loadQuestions()
 }
