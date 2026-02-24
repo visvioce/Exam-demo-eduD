@@ -158,16 +158,13 @@ async function handleRegister() {
 </script>
 
 <style scoped lang="scss">
-.register-container {
-  display: flex;
-  min-height: 100vh;
-  background: #ffffff;
-}
+@use '@/styles/design-tokens.scss' as *;
+@use '@/styles/views/auth-form-shared.scss';
 
 // 左侧黑色装饰区域
 .register-left {
   flex: 0 0 45%;
-  background: #000000;
+  background: $black;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,144 +235,28 @@ async function handleRegister() {
   }
 }
 
-// 右侧注册表单区域
-.register-right {
-  flex: 0 0 55%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  padding: 60px;
-  overflow-y: auto;
-}
-
-.register-content {
-  width: 100%;
-  max-width: 450px;
-
-  .register-header {
-    margin-bottom: 40px;
-
-    h2 {
-      font-size: 32px;
-      font-weight: 600;
-      color: #000000;
-      margin: 0 0 12px 0;
-      letter-spacing: -0.5px;
-    }
-
-    .register-subtitle {
-      font-size: 14px;
-      color: #666666;
-      margin: 0;
-    }
+.register-form {
+  .role-hint {
+    margin: -6px 0 14px;
+    font-size: $font-size-xs;
+    color: $text-tertiary;
   }
 
-  .register-form {
-    .role-hint {
-      margin: -6px 0 14px;
-      font-size: 12px;
-      color: #666666;
-    }
+  :deep(.el-select) {
+    width: 100%;
 
-    .form-item {
-      margin-bottom: 20px;
-
-      :deep(.el-input__wrapper) {
-        padding: 0 16px;
-        border-radius: 8px;
-        background: #ffffff;
-        border: 1px solid #e0e0e0;
-        box-shadow: none;
-        transition: all 0.2s ease;
-
-        &:hover {
-          border-color: #999999;
-        }
-
-        &.is-focus {
-          border-color: #000000;
-        }
-
-        .el-input__inner {
-          height: 48px;
-          line-height: 48px;
-          color: #000000;
-          font-size: 15px;
-        }
-
-        .el-input__inner::placeholder {
-          color: #999999;
-        }
-
-        .el-input__prefix {
-          color: #666666;
-        }
-      }
-
-      :deep(.el-select) {
-        width: 100%;
-
-        .el-select__wrapper {
-          height: 48px;
-          border-radius: 8px;
-          border: 1px solid #e0e0e0;
-          box-shadow: none;
-
-          &:hover {
-            border-color: #999999;
-          }
-
-          &.is-focused {
-            border-color: #000000;
-          }
-        }
-      }
-
-      :deep(.el-form-item__error) {
-        color: #d32f2f;
-        font-size: 12px;
-        padding-top: 6px;
-      }
-    }
-
-    .register-btn {
-      width: 100%;
+    .el-select__wrapper {
       height: 48px;
-      font-size: 16px;
-      font-weight: 600;
-      background: #000000;
-      border-color: #000000;
-      border-radius: 8px;
-      transition: all 0.2s ease;
+      border-radius: $radius-lg;
+      border: 1px solid $border-color;
+      box-shadow: none;
 
       &:hover {
-        background: #333333;
-        border-color: #333333;
-        transform: translateY(-1px);
+        border-color: $text-tertiary;
       }
 
-      &:active {
-        transform: translateY(0);
-      }
-
-      &.is-loading {
-        opacity: 0.8;
-      }
-    }
-  }
-
-  .register-footer {
-    margin-top: 28px;
-    text-align: center;
-
-    .login-link {
-      font-size: 14px;
-      color: #666666;
-      transition: color 0.2s ease;
-
-      &:hover {
-        color: #000000;
+      &.is-focused {
+        border-color: $text-primary;
       }
     }
   }

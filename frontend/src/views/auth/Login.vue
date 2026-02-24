@@ -189,16 +189,11 @@ async function handleLogin() {
 
 <style scoped lang="scss">
 @use '@/styles/design-tokens.scss' as *;
-
-.login-container {
-  display: flex;
-  min-height: 100vh;
-  background: #ffffff;
-}
+@use '@/styles/views/auth-form-shared.scss';
 
 .login-left {
   flex: 0 0 45%;
-  background: #000000;
+  background: $black;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,102 +335,8 @@ async function handleLogin() {
   @keyframes blur-out { 0% { opacity: 1; filter: blur(0); transform: scale(1); } 100% { opacity: 0; filter: blur(20px); transform: scale(0.9); } }
 }
 
-.login-right {
-  flex: 0 0 55%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  padding: 60px;
-}
-
 .login-content {
-  width: 100%;
   max-width: 400px;
-
-  .login-header {
-    margin-bottom: 48px;
-
-    h2 {
-      font-size: 32px;
-      font-weight: 600;
-      color: #000000;
-      margin: 0 0 12px 0;
-      letter-spacing: -0.5px;
-    }
-
-    .login-subtitle {
-      font-size: 14px;
-      color: #666666;
-      margin: 0;
-    }
-  }
-
-  .login-form {
-    .form-item {
-      margin-bottom: 24px;
-
-      :deep(.el-input__wrapper) {
-        padding: 0 16px;
-        border-radius: 8px;
-        background: #ffffff;
-        border: 1px solid #e0e0e0;
-        box-shadow: none;
-        transition: all 0.2s ease;
-
-        &:hover { border-color: #999999; }
-        &.is-focus { border-color: #000000; }
-
-        .el-input__inner {
-          height: 48px;
-          line-height: 48px;
-          color: #000000;
-          font-size: 15px;
-        }
-
-        .el-input__inner::placeholder { color: #999999; }
-        .el-input__prefix { color: #666666; }
-      }
-
-      :deep(.el-form-item__error) {
-        color: #d32f2f;
-        font-size: 12px;
-        padding-top: 6px;
-      }
-    }
-
-    .login-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 16px;
-      font-weight: 600;
-      background: #000000;
-      border-color: #000000;
-      border-radius: 8px;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: #333333;
-        border-color: #333333;
-        transform: translateY(-1px);
-      }
-
-      &:active { transform: translateY(0); }
-      &.is-loading { opacity: 0.8; }
-    }
-  }
-
-  .login-footer {
-    margin-top: 32px;
-    text-align: center;
-
-    .register-link {
-      font-size: 14px;
-      color: #666666;
-      transition: color 0.2s ease;
-
-      &:hover { color: #000000; }
-    }
-  }
 }
+
 </style>
