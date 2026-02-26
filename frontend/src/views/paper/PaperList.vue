@@ -16,26 +16,30 @@
         </el-form-item>
         <el-form-item label="组卷方式">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in typeOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.type === item.value }]"
+              :aria-pressed="searchForm.type === item.value"
               @click="handleTypeChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item label="状态">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in statusOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.status === item.value }]"
+              :aria-pressed="searchForm.status === item.value"
               @click="handleStatusChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item>
@@ -46,7 +50,7 @@
 
     <!-- 试卷列表 -->
     <el-card class="table-card">
-      <el-table :data="papers" v-loading="loading" stripe>
+      <el-table :data="papers" v-loading="loading" stripe table-layout="auto" :fit="true">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="试卷名称" min-width="200" />
         <el-table-column prop="description" label="描述" min-width="150">
@@ -54,19 +58,19 @@
             {{ row.description || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="courseName" label="课程" width="120" />
-        <el-table-column prop="totalScore" label="总分" width="80" />
-        <el-table-column prop="type" label="组卷方式" width="100">
+        <el-table-column prop="courseName" label="课程" min-width="120" />
+        <el-table-column prop="totalScore" label="总分" min-width="88" />
+        <el-table-column prop="type" label="组卷方式" min-width="108">
           <template #default="{ row }">
             <el-tag :type="getTypeColor(row.type)">{{ getTypeName(row.type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusColor(row.status)">{{ getStatusName(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="120">
+        <el-table-column label="操作" min-width="120">
           <template #default="{ row }">
             <ActionButtons
               @view="handleView(row)"
@@ -188,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { paperApi } from '@/api/paper'
 import { questionApi } from '@/api/question'
@@ -196,6 +200,7 @@ import { courseApi } from '@/api/course'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { getErrorMessage } from '@/utils/error'
+import { usePagedList } from '@/composables/usePagedList'
 import type { Paper, Question, Course } from '@/types'
 import ActionButtons from '@/components/ActionButtons.vue'
 import ManualPaperForm from './components/ManualPaperForm.vue'
@@ -203,9 +208,7 @@ import AutoPaperForm from './components/AutoPaperForm.vue'
 
 const authStore = useAuthStore()
 
-const loading = ref(false)
 const submitting = ref(false)
-const papers = ref<Paper[]>([])
 const courses = ref<Course[]>([])
 const questions = ref<Question[]>([])
 const subjects = ref<string[]>([])
@@ -231,16 +234,37 @@ const statusOptions = [
   { label: '已归档', value: 'ARCHIVED' }
 ]
 
-const searchForm = reactive({
-  keyword: '',
-  type: '',
-  status: ''
-})
-
-const pagination = reactive({
-  current: 1,
-  size: 10,
-  total: 0
+const {
+  records: papers,
+  loading,
+  searchForm,
+  pagination,
+  load: loadPapers,
+  loadFromFirstPage,
+  resetSearch,
+  toggleSearch
+} = usePagedList<Paper, { keyword: string; type: string; status: string }>({
+  createSearchForm: () => ({
+    keyword: '',
+    type: '',
+    status: ''
+  }),
+  fetchPage: async ({ current, size, keyword, type, status }) => {
+    const res = await paperApi.page({
+      current,
+      size,
+      keyword: keyword || undefined,
+      type: type || undefined,
+      status: status || undefined
+    })
+    return {
+      records: res.data.records,
+      total: res.data.total
+    }
+  },
+  onError: () => {
+    ElMessage.error('加载试卷失败')
+  }
 })
 
 const availableQuestions = computed(() => questions.value)
@@ -252,9 +276,7 @@ function hasPermission(roles: string[]) {
 function canEdit(paper: Paper) {
   const user = authStore.user
   if (!user) return false
-  if (user.role === 'ADMIN') return true
-  if (user.role === 'TEACHER' && paper.teacherId === user.id) return true
-  return false
+  return (user.role === 'ADMIN' || user.role === 'TEACHER') && paper.teacherId === user.id
 }
 
 function getTypeName(type: string) {
@@ -335,25 +357,6 @@ function getQuestionAnswerDisplay(questionId: number | undefined): string {
   return String(question.correctAnswer)
 }
 
-async function loadPapers() {
-  loading.value = true
-  try {
-    const res = await paperApi.page({
-      current: pagination.current,
-      size: pagination.size,
-      keyword: searchForm.keyword || undefined,
-      type: searchForm.type || undefined,
-      status: searchForm.status || undefined
-    })
-    papers.value = res.data.records
-    pagination.total = res.data.total
-  } catch (error) {
-    ElMessage.error('加载试卷失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 async function loadCourses() {
   try {
     const res = await courseApi.list()
@@ -382,28 +385,19 @@ async function loadSubjects() {
 }
 
 function handleKeywordInput() {
-  pagination.current = 1
-  loadPapers()
+  void loadFromFirstPage()
 }
 
 function handleTypeChange(value: string) {
-  searchForm.type = searchForm.type === value ? '' : value
-  pagination.current = 1
-  loadPapers()
+  void toggleSearch('type', value, '')
 }
 
 function handleStatusChange(value: string) {
-  searchForm.status = searchForm.status === value ? '' : value
-  pagination.current = 1
-  loadPapers()
+  void toggleSearch('status', value, '')
 }
 
 function handleReset() {
-  searchForm.keyword = ''
-  searchForm.type = ''
-  searchForm.status = ''
-  pagination.current = 1
-  loadPapers()
+  void resetSearch()
 }
 
 function handleView(row: Paper) {
@@ -433,7 +427,7 @@ async function handleDelete(row: Paper) {
     })
     await paperApi.delete(row.id)
     ElMessage.success('删除成功')
-    loadPapers()
+    void loadPapers()
   } catch {
     // 取消删除
   }
@@ -450,7 +444,7 @@ async function handleManualSubmit(data: any) {
       ElMessage.success('创建成功')
     }
     editDialogVisible.value = false
-    loadPapers()
+    void loadPapers()
   } catch (error: unknown) {
     ElMessage.error(getErrorMessage(error, '操作失败'))
   } finally {
@@ -464,7 +458,7 @@ async function handleAutoSubmit(data: any) {
     await paperApi.autoGenerate(data)
     ElMessage.success('自动组卷成功')
     editDialogVisible.value = false
-    loadPapers()
+    void loadPapers()
   } catch (error: unknown) {
     ElMessage.error(getErrorMessage(error, '自动组卷失败'))
   } finally {
@@ -483,7 +477,7 @@ function handleCurrentTabSubmit() {
 }
 
 onMounted(() => {
-  loadPapers()
+  void loadPapers()
   loadCourses()
   loadQuestions()
   loadSubjects()
@@ -532,8 +526,8 @@ onMounted(() => {
 
     :deep(.el-table) {
       .el-table__header th {
-        background: #fafafa;
-        font-weight: 600;
+        background: $bg-secondary;
+        font-weight: $font-weight-medium;
       }
     }
 

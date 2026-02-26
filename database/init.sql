@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS courses (
     name VARCHAR(100) NOT NULL COMMENT '课程名称',
     code VARCHAR(20) UNIQUE NOT NULL COMMENT '课程代码',
     description TEXT COMMENT '课程描述',
+    cover_url VARCHAR(500) COMMENT '课程封面URL',
     teacher_id BIGINT NOT NULL COMMENT '授课教师ID',
     credits DECIMAL(3,1) NOT NULL DEFAULT 1.0 COMMENT '学分',
     status ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE' COMMENT '状态',

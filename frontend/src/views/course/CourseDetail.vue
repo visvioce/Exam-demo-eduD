@@ -9,9 +9,16 @@
     </div>
 
     <el-card v-loading="loading">
+      <div class="course-cover" v-if="course?.coverUrl">
+        <img :src="course.coverUrl" :alt="course.name" />
+      </div>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="课程名称">{{ course?.name }}</el-descriptions-item>
         <el-descriptions-item label="课程代码">{{ course?.code }}</el-descriptions-item>
+        <el-descriptions-item label="封面地址" :span="2">
+          <el-link v-if="course?.coverUrl" :href="course.coverUrl" target="_blank" type="primary">{{ course.coverUrl }}</el-link>
+          <span v-else>-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="授课教师">{{ getTeacherDisplayName() }}</el-descriptions-item>
         <el-descriptions-item label="学分">{{ course?.credits }}</el-descriptions-item>
         <el-descriptions-item label="状态">
@@ -21,80 +28,95 @@
         </el-descriptions-item>
         <el-descriptions-item label="截止日期">{{ formatDate(course?.deadline) }}</el-descriptions-item>
         <el-descriptions-item label="课程描述" :span="2">{{ course?.description || '-' }}</el-descriptions-item>
+        <el-descriptions-item v-if="showMembers" label="课程成员" :span="2">
+          <div class="members-inline">
+            <div class="members-inline-header">
+              <span class="member-count">共 {{ members.length }} 人</span>
+            </div>
+            <div class="members-inline-list" v-loading="membersLoading">
+              <template v-if="members.length > 0">
+                <div class="member-inline-item" v-for="row in members" :key="row.id">
+                  <el-avatar :size="28" :src="row.avatar">
+                    {{ (row.nickname || row.username || '?').slice(0, 1) }}
+                  </el-avatar>
+                  <span class="member-inline-name">{{ row.nickname || row.username || `用户#${row.id}` }}</span>
+                </div>
+              </template>
+              <el-empty v-else description="暂无成员" :image-size="40" />
+            </div>
+          </div>
+        </el-descriptions-item>
       </el-descriptions>
 
       <!-- 操作按钮 -->
       <div class="actions">
         <template v-if="isStudent">
-          <el-button v-if="!isJoined" type="primary" @click="handleJoin" :loading="joining">
-            加入课程
+          <el-button
+            v-if="!isJoined"
+            type="primary"
+            @click="handleJoin"
+            :loading="joining"
+            :disabled="!canJoinCourse"
+          >
+            {{ canJoinCourse ? '加入课程' : '课程不可加入' }}
           </el-button>
           <el-button v-else type="danger" @click="handleLeave" :loading="leaving">
             退出课程
           </el-button>
         </template>
         <template v-else-if="canEdit">
-          <el-button type="primary" @click="handleEdit">编辑课程</el-button>
-          <el-button type="danger" @click="handleDelete">删除课程</el-button>
+          <ActionButtons
+            :show-view="false"
+            @edit="handleEdit"
+            @delete="handleDelete"
+          />
         </template>
       </div>
-    </el-card>
-
-    <!-- 课程成员 -->
-    <el-card class="members-card" v-if="showMembers">
-      <template #header>
-        <div class="card-header">
-          <span>课程成员</span>
-          <span class="member-count">共 {{ members.length }} 人</span>
-        </div>
-      </template>
-      <el-table :data="members" v-loading="membersLoading" stripe max-height="400">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="username" label="用户名" width="150" />
-        <el-table-column prop="nickname" label="昵称" width="150" />
-        <el-table-column prop="role" label="角色" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getRoleColor(row.role)" size="small">{{ getRoleName(row.role) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'ACTIVE' ? '正常' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-      </el-table>
     </el-card>
 
     <!-- 课程考试 -->
     <el-card class="exams-card">
       <template #header>
-        <span>课程考试</span>
+        <div class="card-header">
+          <span>课程考试</span>
+          <span v-if="isStudent && !isJoined" class="member-count">可预览，加入课程后可参加考试</span>
+        </div>
       </template>
-      <el-table :data="exams" v-loading="examsLoading" stripe>
+      <el-table :data="exams" v-loading="examsLoading" stripe table-layout="fixed" :fit="true" class="detail-table">
         <el-table-column prop="title" label="考试名称" min-width="200" />
-        <el-table-column prop="startedAt" label="开始时间" width="180">
+        <el-table-column prop="startedAt" label="开始时间" min-width="168">
           <template #default="{ row }">
             {{ formatDate(row.startedAt) }}
           </template>
         </el-table-column>
-        <el-table-column prop="endedAt" label="结束时间" width="180">
+        <el-table-column prop="endedAt" label="结束时间" min-width="168">
           <template #default="{ row }">
             {{ formatDate(row.endedAt) }}
           </template>
         </el-table-column>
-        <el-table-column prop="duration" label="时长(分钟)" width="100" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="duration" label="时长(分钟)" min-width="108" />
+        <el-table-column prop="status" label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusColor(row.status)">{{ getStatusName(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" min-width="120">
           <template #default="{ row }">
-            <el-button size="small" type="primary" @click="goToExam(row)">
-              {{ isStudent ? '参加' : '查看' }}
+            <el-button
+              v-if="isStudent"
+              size="small"
+              type="primary"
+              :disabled="!canTakeCourseExam(row)"
+              @click="goToExam(row)"
+            >
+              {{ getStudentExamActionText(row) }}
             </el-button>
+            <ActionButtons
+              v-else
+              :show-edit="false"
+              :show-delete="false"
+              @view="goToExam(row)"
+            />
           </template>
         </el-table-column>
       </el-table>
@@ -108,6 +130,9 @@
         </el-form-item>
         <el-form-item label="课程代码" prop="code">
           <el-input v-model="courseForm.code" placeholder="请输入课程代码" />
+        </el-form-item>
+        <el-form-item label="封面地址">
+          <el-input v-model="courseForm.coverUrl" placeholder="请输入课程封面URL（可选）" />
         </el-form-item>
         <el-form-item label="学分" prop="credits">
           <el-input-number v-model="courseForm.credits" :min="1" :max="10" />
@@ -140,10 +165,11 @@ import { useAuthStore } from '@/stores/auth'
 import { courseApi } from '@/api/course'
 import { examApi } from '@/api/exam'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { formatDate, getRoleColor, getRoleName, getStatusColor, getStatusName } from '@/utils/format'
+import { formatDate, getStatusColor, getStatusName } from '@/utils/format'
 import { getErrorMessage } from '@/utils/error'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Course, User, Exam } from '@/types'
+import ActionButtons from '@/components/ActionButtons.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,6 +193,7 @@ const courseFormRef = ref<FormInstance>()
 const courseForm = reactive({
   name: '',
   code: '',
+  coverUrl: '',
   credits: 1,
   status: 'ACTIVE',
   deadline: '',
@@ -182,11 +209,16 @@ const rules = reactive<FormRules>({
 const courseId = computed(() => Number(route.params.id))
 const isStudent = computed(() => authStore.user?.role === 'STUDENT')
 const canEdit = computed(() => {
-  if (authStore.user?.role === 'ADMIN') return true
-  if (authStore.user?.role === 'TEACHER' && course.value?.teacherId === authStore.user?.id) return true
-  return false
+  const role = authStore.user?.role
+  return (role === 'TEACHER' || role === 'ADMIN') && course.value?.teacherId === authStore.user?.id
 })
 const showMembers = computed(() => canEdit.value || isJoined.value)
+const canJoinCourse = computed(() => {
+  if (!course.value || isJoined.value) return false
+  if (course.value.status !== 'ACTIVE') return false
+  if (!course.value.deadline) return true
+  return new Date(course.value.deadline).getTime() >= Date.now()
+})
 
 function goBack() {
   router.back()
@@ -208,8 +240,26 @@ async function loadCourse() {
   try {
     const res = await courseApi.getById(courseId.value)
     course.value = res.data
-  } catch (error) {
-    ElMessage.error('加载课程失败')
+  } catch (error: unknown) {
+    // 兼容后端权限策略未更新的场景：学生仍可通过课程列表预览基础信息
+    if (isStudent.value) {
+      try {
+        const [activeRes, myRes] = await Promise.all([
+          courseApi.getActiveCourses(),
+          courseApi.getMyCourses()
+        ])
+        const previewCourse = [...(myRes.data || []), ...(activeRes.data || [])]
+          .find((item) => item.id === courseId.value)
+        if (previewCourse) {
+          course.value = previewCourse
+          ElMessage.warning('当前为课程预览模式，加入课程后可参与考试与成员相关功能')
+          return
+        }
+      } catch {
+        // 忽略降级查询失败，走统一错误提示
+      }
+    }
+    ElMessage.error(getErrorMessage(error, '加载课程失败'))
   } finally {
     loading.value = false
   }
@@ -231,8 +281,16 @@ async function loadExams() {
   examsLoading.value = true
   try {
     if (isStudent.value) {
-      const res = await examApi.getMyExams()
-      exams.value = (res.data || []).filter((exam) => exam.courseId === courseId.value)
+      if (isJoined.value) {
+        const res = await examApi.getMyExams()
+        exams.value = (res.data || []).filter((exam) => exam.courseId === courseId.value)
+      } else {
+        // 未加入课程时仅提供考试预览信息，不允许参加
+        const res = await examApi.getPublishedExams()
+        exams.value = (res.data || [])
+          .filter((exam) => exam.courseId === courseId.value)
+          .map((exam) => ({ ...exam, studentExamStatus: 'NOT_STARTED' }))
+      }
     } else {
       const res = await examApi.page({ current: 1, size: 100, courseId: courseId.value })
       exams.value = res.data.records || []
@@ -298,6 +356,7 @@ function handleEdit() {
   Object.assign(courseForm, {
     name: course.value.name,
     code: course.value.code,
+    coverUrl: course.value.coverUrl || '',
     credits: course.value.credits,
     status: course.value.status,
     deadline: course.value.deadline || '',
@@ -316,6 +375,7 @@ async function handleUpdate() {
         await courseApi.update(courseId.value, {
           name: courseForm.name,
           code: courseForm.code,
+          coverUrl: courseForm.coverUrl || undefined,
           credits: courseForm.credits,
           status: courseForm.status as 'ACTIVE' | 'INACTIVE',
           deadline: courseForm.deadline || undefined,
@@ -350,16 +410,54 @@ async function handleDelete() {
 
 function goToExam(exam: Exam) {
   if (isStudent.value) {
+    if (!canTakeCourseExam(exam)) {
+      if (!isJoined.value) {
+        ElMessage.warning('请先加入课程后再参加考试')
+      } else {
+        ElMessage.warning('当前考试不可参加')
+      }
+      return
+    }
     router.push(`/exam/${exam.id}/take`)
   } else {
     router.push(`/exam/${exam.id}`)
   }
 }
 
+function canTakeCourseExam(exam: Exam): boolean {
+  if (!isStudent.value) return false
+  if (!isJoined.value) return false
+  if (course.value?.status !== 'ACTIVE') return false
+  if (exam.studentExamStatus === 'SUBMITTED' || exam.studentExamStatus === 'GRADED') return false
+  if (exam.status !== 'PUBLISHED' && exam.status !== 'STARTED') return false
+
+  const now = Date.now()
+  const start = new Date(exam.startedAt).getTime()
+  const end = new Date(exam.endedAt).getTime()
+  return now >= start && now <= end
+}
+
+function getStudentExamActionText(exam: Exam): string {
+  if (!isJoined.value) return '仅预览'
+  if (course.value?.status !== 'ACTIVE') return '课程已结束'
+  if (exam.studentExamStatus === 'SUBMITTED') return '已提交'
+  if (exam.studentExamStatus === 'GRADED') return '已完成'
+  if (exam.studentExamStatus === 'IN_PROGRESS') return '继续考试'
+  if (exam.status === 'CANCELLED') return '已取消'
+  if (exam.status === 'ENDED') return '已结束'
+  if (exam.status === 'DRAFT') return '未发布'
+
+  const now = Date.now()
+  const start = new Date(exam.startedAt).getTime()
+  const end = new Date(exam.endedAt).getTime()
+  if (now < start) return '未开始'
+  if (now > end) return '已结束'
+  return '参加考试'
+}
+
 onMounted(() => {
   loadCourse()
   checkJoined()
-  loadExams()
 })
 
 watchEffect(() => {
@@ -371,6 +469,15 @@ watchEffect(() => {
     members.value = []
   }
 })
+
+watchEffect(() => {
+  if (!course.value) return
+  // 学生加入/退出课程后需要刷新考试数据，避免仍显示旧状态
+  if (isStudent.value) {
+    void isJoined.value
+  }
+  loadExams()
+})
 </script>
 
 <style scoped lang="scss">
@@ -379,21 +486,38 @@ watchEffect(() => {
 @use '@/styles/views/base-detail.scss';
 
 .course-detail {
+  .course-cover {
+    width: 100%;
+    max-height: 260px;
+    border-radius: $radius-md;
+    overflow: hidden;
+    border: 1px solid $border-light;
+    margin-bottom: $spacing-lg;
+
+    img {
+      width: 100%;
+      max-height: 260px;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
   .actions {
     margin-top: $spacing-xl;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: $spacing-sm;
   }
 
   .full-width {
     width: 100%;
   }
 
-  .members-card,
   .exams-card {
     margin-top: $spacing-xl;
-    border: 1px solid $border-color;
-    border-radius: $radius-md;
-    background: $bg-primary;
+    border: none;
+    border-radius: 0;
+    background: transparent;
 
     .card-header {
       display: flex;
@@ -404,6 +528,71 @@ watchEffect(() => {
         color: $text-tertiary;
         font-size: $font-size-sm;
       }
+    }
+  }
+
+  .members-inline {
+    width: 100%;
+
+    .members-inline-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: $spacing-xs;
+
+      .member-count {
+        color: $text-tertiary;
+        font-size: $font-size-sm;
+      }
+    }
+
+    .members-inline-list {
+      max-height: 148px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: $spacing-xs;
+      column-gap: $spacing-lg;
+      align-content: start;
+      padding-right: $spacing-xs;
+    }
+
+    .member-inline-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      min-width: 0;
+      padding: 2px 0;
+    }
+
+    .member-inline-name {
+      color: $text-primary;
+      font-size: $font-size-sm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    .members-inline {
+      .members-inline-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+
+  .detail-table {
+    width: 100%;
+
+    :deep(.el-table__inner-wrapper),
+    :deep(.el-table__header),
+    :deep(.el-table__body) {
+      width: 100% !important;
+    }
+
+    :deep(.el-table__header-wrapper),
+    :deep(.el-table__body-wrapper) {
+      width: 100%;
     }
   }
 }

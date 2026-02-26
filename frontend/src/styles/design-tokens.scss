@@ -156,8 +156,16 @@ $line-height-normal: 1.5;
 $line-height-relaxed: 1.7;
 
 // ===== 过渡动画 =====
-$transition-fast: 0.1s ease;
-$transition-base: 0.2s ease;  // 极简过渡
+$motion-ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+$motion-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+$motion-duration-fast: 120ms;
+$motion-duration-base: 180ms;
+$transition-fast: $motion-duration-fast $motion-ease-standard;
+$transition-base: $motion-duration-base $motion-ease-standard;
+
+// 焦点环（键盘可达性）
+$focus-ring-color: rgba(0, 0, 0, 0.16);
+$focus-ring: 0 0 0 3px $focus-ring-color;
 
 // ===== 响应式断点 =====
 $breakpoint-xs: 480px;

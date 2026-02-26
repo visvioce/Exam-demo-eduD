@@ -8,12 +8,59 @@
       </el-button>
     </div>
 
-    <!-- 课程卡片列表 -->
-    <el-row :gutter="16" v-loading="loading">
-      <el-col :span="8" v-for="course in courses" :key="course.id">
+    <div v-if="isStudent" class="student-course-section" v-loading="loading">
+      <div class="section-header">
+        <span>已加入课程</span>
+        <span class="section-count">{{ myCourses.length }} 门</span>
+      </div>
+
+      <el-row v-if="myCourses.length > 0" :gutter="16">
+        <el-col :xs="24" :sm="12" :lg="8" v-for="course in myCourses" :key="course.id">
+          <el-card class="course-card course-card--clickable ui-interactive-surface" shadow="never" @click="handleView(course)">
+            <div class="course-card__cover">
+              <img v-if="course.coverUrl" :src="course.coverUrl" :alt="course.name" />
+              <div v-else class="course-card__cover-placeholder">课程封面</div>
+            </div>
+            <div class="course-card__header">
+              <h3 class="course-card__title ui-title-clamp-2">{{ course.name }}</h3>
+              <el-tag size="small" type="info">{{ course.code }}</el-tag>
+            </div>
+            <div class="course-card__info">
+              <div class="info-item">
+                <span class="info-label">教师：</span>
+                <span>{{ getTeacherDisplayName(course) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">学分：</span>
+                <span>{{ course.credits }}</span>
+              </div>
+              <div class="info-item" v-if="course.deadline">
+                <span class="info-label">截止：</span>
+                <span>{{ formatDate(course.deadline) }}</span>
+              </div>
+            </div>
+            <div class="course-card__footer">
+              <el-tag :type="course.status === 'ACTIVE' ? 'success' : 'info'" size="small">
+                {{ course.status === 'ACTIVE' ? '进行中' : '已结束' }}
+              </el-tag>
+              <el-tag size="small" type="success">已参加</el-tag>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+      <el-empty v-else description="你还没有加入任何课程" />
+    </div>
+
+    <!-- 教师/管理员课程列表 -->
+    <el-row v-else :gutter="16" v-loading="loading">
+      <el-col :xs="24" :sm="12" :lg="8" v-for="course in courses" :key="course.id">
         <el-card class="course-card" shadow="never">
+          <div class="course-card__cover">
+            <img v-if="course.coverUrl" :src="course.coverUrl" :alt="course.name" />
+            <div v-else class="course-card__cover-placeholder">课程封面</div>
+          </div>
           <div class="course-card__header">
-            <h3 class="course-card__title">{{ course.name }}</h3>
+            <h3 class="course-card__title ui-title-clamp-2">{{ course.name }}</h3>
             <el-tag size="small" type="info">{{ course.code }}</el-tag>
           </div>
           <div class="course-card__info">
@@ -39,13 +86,9 @@
                 @view="handleView(course)"
                 @edit="handleEdit(course)"
                 @delete="handleDelete(course)"
-                :show-edit="hasPermission(['ADMIN', 'TEACHER'])"
-                :show-delete="hasPermission(['ADMIN', 'TEACHER'])"
+                :show-edit="canManage(course)"
+                :show-delete="canManage(course)"
               />
-              <el-button size="small" type="success" @click="handleJoin(course)"
-                v-if="!hasPermission(['ADMIN', 'TEACHER']) && !isJoined(course)">加入</el-button>
-              <el-button size="small" type="warning" @click="handleLeave(course)"
-                v-if="!hasPermission(['ADMIN', 'TEACHER']) && isJoined(course)">退出</el-button>
             </div>
           </div>
         </el-card>
@@ -60,6 +103,9 @@
         </el-form-item>
         <el-form-item label="课程代码" prop="code">
           <el-input v-model="courseForm.code" placeholder="请输入课程代码" />
+        </el-form-item>
+        <el-form-item label="封面地址">
+          <el-input v-model="courseForm.coverUrl" placeholder="请输入课程封面URL（可选）" />
         </el-form-item>
         <el-form-item label="学分" prop="credits">
           <el-input-number v-model="courseForm.credits" :min="0.5" :max="10" :step="0.5" />
@@ -109,15 +155,18 @@ const editDialogVisible = ref(false)
 const isEdit = ref(false)
 const courseFormRef = ref<FormInstance>()
 
-const courseForm = reactive({
+const defaultCourseForm = {
   id: 0,
   name: '',
   code: '',
   description: '',
+  coverUrl: '',
   credits: 3.0,
   status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
   deadline: ''
-})
+}
+
+const courseForm = reactive({ ...defaultCourseForm })
 
 const rules = reactive<FormRules>({
   name: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
@@ -132,21 +181,22 @@ function hasPermission(roles: string[]) {
 
 const isStudent = computed(() => authStore.user?.role === 'STUDENT')
 
+function canManage(course: Course) {
+  const role = authStore.user?.role
+  return (role === 'ADMIN' || role === 'TEACHER') && course.teacherId === authStore.user?.id
+}
+
 async function loadCourses() {
   loading.value = true
   try {
-    let res
     if (hasPermission(['ADMIN', 'TEACHER'])) {
-      // 管理员和教师查看自己管理的课程
-      res = await courseApi.list()
-    } else {
-      // 学生查看活跃课程
-      res = await courseApi.getActiveCourses()
-      // 同时加载学生已加入的课程
-      const myRes = await courseApi.getMyCourses()
-      myCourses.value = myRes.data
+      const managedRes = await courseApi.list()
+      courses.value = managedRes.data || []
+      return
     }
-    courses.value = res.data
+
+    const myRes = await courseApi.getMyCourses()
+    myCourses.value = myRes.data || []
   } catch (error) {
     ElMessage.error('加载课程失败')
   } finally {
@@ -154,12 +204,8 @@ async function loadCourses() {
   }
 }
 
-// 使用 Set 优化课程加入状态检查
-const joinedCourseIds = computed(() => new Set(myCourses.value.map(c => c.id)))
-
-// 检查是否已加入课程
-function isJoined(course: Course) {
-  return joinedCourseIds.value.has(course.id)
+function resetCourseForm(overrides: Partial<typeof defaultCourseForm> = {}) {
+  Object.assign(courseForm, defaultCourseForm, overrides)
 }
 
 function getTeacherDisplayName(course: Course): string {
@@ -172,51 +218,9 @@ function getTeacherDisplayName(course: Course): string {
   return '-'
 }
 
-// 加入课程
-async function handleJoin(course: Course) {
-  try {
-    await courseApi.join(course.id)
-    ElMessage.success(`已加入课程：${course.name}`)
-    // 重新加载已加入的课程列表
-    const res = await courseApi.getMyCourses()
-    myCourses.value = res.data
-  } catch (error: unknown) {
-    ElMessage.error(getErrorMessage(error, '加入课程失败'))
-  }
-}
-
-// 退出课程
-async function handleLeave(course: Course) {
-  try {
-    await ElMessageBox.confirm(`确定要退出课程"${course.name}"吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    await courseApi.leave(course.id)
-    ElMessage.success(`已退出课程：${course.name}`)
-    // 重新加载已加入的课程列表
-    const res = await courseApi.getMyCourses()
-    myCourses.value = res.data
-  } catch (error) {
-    // 用户取消或处理错误
-    if (error !== 'cancel') {
-      ElMessage.error('退出课程失败')
-    }
-  }
-}
-
 function handleCreate() {
   isEdit.value = false
-  Object.assign(courseForm, {
-    id: 0,
-    name: '',
-    code: '',
-    description: '',
-    credits: 3.0,
-    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
-    deadline: ''
-  })
+  resetCourseForm()
   editDialogVisible.value = true
 }
 
@@ -226,13 +230,14 @@ function handleView(row: Course) {
 
 function handleEdit(row: Course) {
   isEdit.value = true
-  Object.assign(courseForm, {
+  resetCourseForm({
     id: row.id,
     name: row.name,
     code: row.code,
     description: row.description || '',
+    coverUrl: row.coverUrl || '',
     credits: row.credits,
-    status: row.status,
+    status: row.status as 'ACTIVE' | 'INACTIVE',
     deadline: row.deadline || ''
   })
   editDialogVisible.value = true
@@ -247,7 +252,7 @@ async function handleDelete(row: Course) {
     })
     await courseApi.delete(row.id)
     ElMessage.success('删除成功')
-    loadCourses()
+    void loadCourses()
   } catch {
     // 取消删除
   }
@@ -264,6 +269,7 @@ async function handleSubmit() {
           name: courseForm.name,
           code: courseForm.code,
           description: courseForm.description,
+          coverUrl: courseForm.coverUrl || undefined,
           credits: courseForm.credits,
           status: courseForm.status,
           deadline: courseForm.deadline || undefined
@@ -277,7 +283,7 @@ async function handleSubmit() {
           ElMessage.success('创建成功')
         }
         editDialogVisible.value = false
-        loadCourses()
+        void loadCourses()
       } catch (error: unknown) {
         ElMessage.error(getErrorMessage(error, '操作失败'))
       } finally {
@@ -288,7 +294,7 @@ async function handleSubmit() {
 }
 
 onMounted(() => {
-  loadCourses()
+  void loadCourses()
 })
 </script>
 
@@ -297,12 +303,58 @@ onMounted(() => {
 @use '@/styles/views/base-list.scss';
 
 .course-list {
+  .student-course-section {
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-md;
+      color: $text-secondary;
+
+      .section-count {
+        color: $text-tertiary;
+        font-size: $font-size-sm;
+      }
+    }
+  }
+
   .full-width {
     width: 100%;
   }
 
   .course-card {
     margin-bottom: $spacing-lg;
+
+    &__cover {
+      width: 100%;
+      height: 148px;
+      border-radius: $radius-sm;
+      overflow: hidden;
+      margin-bottom: $spacing-md;
+      border: 1px solid $border-light;
+      background: $bg-hover;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+    }
+
+    &__cover-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $text-tertiary;
+      font-size: $font-size-sm;
+    }
+
+    &--clickable {
+      cursor: pointer;
+    }
 
     &__header {
       display: flex;

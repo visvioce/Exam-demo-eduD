@@ -324,48 +324,53 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/design-tokens.scss' as *;
+
 .exam-review {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 20px;
-  display: flex;
-  gap: 20px;
+  padding: $spacing-xl;
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: $spacing-lg;
+  align-items: start;
 
   .exam-header {
-    position: fixed;
+    grid-column: 1 / -1;
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
-    background: #fff;
-    border-bottom: 1px solid #e4e7ed;
-    padding: 15px 20px;
+    z-index: 20;
+    background: $bg-primary;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    padding: $spacing-lg $spacing-xl;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    align-items: flex-start;
 
     .exam-info {
       h2 {
-        margin: 0 0 10px 0;
-        font-size: 20px;
+        margin: 0 0 $spacing-sm 0;
+        font-size: $font-size-xl;
+        color: $text-primary;
       }
 
       .info-items {
         display: flex;
-        gap: 20px;
-        font-size: 14px;
-        color: #606266;
+        flex-wrap: wrap;
+        gap: $spacing-md $spacing-xl;
+        font-size: $font-size-sm;
+        color: $text-tertiary;
 
         .score-display {
-          font-weight: bold;
+          font-weight: 600;
 
           .pass {
-            color: #67c23a;
+            color: $success;
           }
 
           .fail {
-            color: #f56c6c;
+            color: $danger;
           }
         }
       }
@@ -373,32 +378,31 @@ onMounted(() => {
   }
 
   .questions-area {
-    flex: 1;
-    margin-top: 100px;
-    margin-right: 280px;
+    min-width: 0;
 
     .question-card {
-      margin-bottom: 20px;
+      margin-bottom: $spacing-lg;
+      border: 1px solid $border-color;
 
       &.correct {
-        border-left: 4px solid #67c23a;
+        border-left: 3px solid $success;
       }
 
       &.wrong {
-        border-left: 4px solid #f56c6c;
+        border-left: 3px solid $danger;
       }
 
       .question-header {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: $spacing-sm;
 
         .question-index {
-          font-weight: bold;
+          font-weight: 600;
         }
 
         .question-score {
-          color: #909399;
+          color: $text-tertiary;
         }
 
         .question-status {
@@ -407,40 +411,41 @@ onMounted(() => {
       }
 
       .question-content {
-        margin-bottom: 15px;
-        font-size: 15px;
-        line-height: 1.6;
+        margin-bottom: $spacing-md;
+        font-size: $font-size-base;
+        line-height: $line-height-relaxed;
       }
 
       .options {
         .option-item {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px;
-          margin-bottom: 8px;
-          border-radius: 4px;
-          background: #f5f7fa;
+          gap: $spacing-md;
+          padding: $spacing-sm $spacing-md;
+          margin-bottom: $spacing-sm;
+          border-radius: $radius-sm;
+          border: 1px solid $border-light;
+          background: $bg-secondary;
 
           &.correct-answer {
-            background: #f0f9eb;
-            border: 1px solid #67c23a;
+            background: $success-bg;
+            border-color: $success;
           }
 
           &.user-answer:not(.correct-answer) {
-            background: #fef0f0;
-            border: 1px solid #f56c6c;
+            background: $danger-bg;
+            border-color: $danger;
           }
 
           .option-label {
-            font-weight: bold;
+            font-weight: 600;
             min-width: 20px;
           }
 
           .correct-icon {
             margin-left: auto;
-            color: #67c23a;
-            font-size: 18px;
+            color: $success;
+            font-size: $font-size-lg;
           }
         }
       }
@@ -448,105 +453,109 @@ onMounted(() => {
       .answer-display {
         .user-answer-box,
         .correct-answer-box {
-          margin-bottom: 10px;
-          padding: 10px;
-          background: #f5f7fa;
-          border-radius: 4px;
+          margin-bottom: $spacing-sm;
+          padding: $spacing-sm $spacing-md;
+          background: $bg-secondary;
+          border: 1px solid $border-light;
+          border-radius: $radius-sm;
 
           .label {
-            font-weight: bold;
-            margin-right: 8px;
+            font-weight: 600;
+            margin-right: $spacing-sm;
           }
 
           .answer {
-            color: #606266;
+            color: $text-secondary;
           }
         }
 
         .correct-answer-box {
-          background: #f0f9eb;
+          background: $success-bg;
+          border-color: $success;
         }
 
         .grading-status {
-          margin-top: 10px;
+          margin-top: $spacing-sm;
         }
 
         .score-display {
-          margin-top: 10px;
+          margin-top: $spacing-sm;
 
           .label {
-            font-weight: bold;
+            font-weight: 600;
           }
 
           .score {
-            color: #67c23a;
-            font-weight: bold;
+            color: $success;
+            font-weight: 600;
           }
         }
       }
 
       .explanation-box {
-        margin-top: 15px;
-        padding-top: 10px;
+        margin-top: $spacing-md;
 
         .explanation-content {
-          background: #f5f7fa;
-          padding: 15px;
-          border-radius: 4px;
-          color: #606266;
-          line-height: 1.6;
+          background: $bg-secondary;
+          border: 1px solid $border-light;
+          padding: $spacing-md;
+          border-radius: $radius-sm;
+          color: $text-secondary;
+          line-height: $line-height-relaxed;
         }
       }
     }
   }
 
   .answer-sheet {
-    position: fixed;
-    right: 20px;
-    top: 100px;
-    width: 250px;
+    position: sticky;
+    top: calc(#{$nav-height} + #{$spacing-lg});
 
     .answer-sheet-header {
-      font-weight: bold;
+      font-weight: 600;
+      color: $text-primary;
     }
 
     .answer-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-      margin-bottom: 15px;
+      gap: $spacing-sm;
+      margin-bottom: $spacing-md;
 
       .answer-item {
         aspect-ratio: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid #dcdfe6;
-        border-radius: 4px;
+        border: 1px solid $border-color;
+        border-radius: $radius-sm;
         cursor: pointer;
-        font-size: 14px;
-        transition: all 0.3s;
+        font-size: $font-size-sm;
+        color: $text-secondary;
+        background: $bg-primary;
+        transition: all $transition-fast;
 
         &:hover {
-          border-color: #409eff;
+          border-color: $text-primary;
+          color: $text-primary;
         }
 
         &.correct {
-          background: #67c23a;
+          background: $success;
           color: #fff;
-          border-color: #67c23a;
+          border-color: $success;
         }
 
         &.wrong {
-          background: #f56c6c;
+          background: $danger;
           color: #fff;
-          border-color: #f56c6c;
+          border-color: $danger;
         }
 
         &.pending {
-          background: #e6a23c;
+          background: $warning;
           color: #fff;
-          border-color: #e6a23c;
+          border-color: $warning;
         }
       }
     }
@@ -554,32 +563,56 @@ onMounted(() => {
     .answer-legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      font-size: 12px;
+      gap: $spacing-md;
+      font-size: $font-size-xs;
+      color: $text-tertiary;
 
       span {
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: $spacing-xs;
       }
 
       .dot {
-        width: 12px;
-        height: 12px;
+        width: 10px;
+        height: 10px;
         border-radius: 2px;
 
         &.correct {
-          background: #67c23a;
+          background: $success;
         }
 
         &.wrong {
-          background: #f56c6c;
+          background: $danger;
         }
 
         &.pending {
-          background: #e6a23c;
+          background: $warning;
         }
       }
+    }
+  }
+}
+
+@media (max-width: $breakpoint-lg) {
+  .exam-review {
+    grid-template-columns: 1fr;
+
+    .answer-sheet {
+      position: static;
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .exam-review {
+    padding: $spacing-md;
+
+    .exam-header {
+      padding: $spacing-md;
+      flex-direction: column;
+      gap: $spacing-md;
     }
   }
 }

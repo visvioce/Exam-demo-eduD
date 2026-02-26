@@ -7,6 +7,16 @@
   background: $bg-primary;
 }
 
+.login-left,
+.register-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl;
+  position: relative;
+  overflow: hidden;
+}
+
 .login-right,
 .register-right {
   flex: 0 0 55%;
@@ -101,13 +111,8 @@
   transition: all $transition-base;
 
   &:hover {
-    background: $primary-light;
-    border-color: $primary-light;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
+    background: $gray-900;
+    border-color: $gray-900;
   }
 
   &.is-loading {
@@ -132,3 +137,45 @@
   }
 }
 
+@media (max-width: $breakpoint-lg) {
+  .login-container,
+  .register-container {
+    flex-direction: column;
+  }
+
+  .login-left,
+  .register-left {
+    width: 100%;
+    min-height: 34vh;
+    padding: $spacing-2xl $spacing-xl;
+  }
+
+  .login-right,
+  .register-right {
+    width: 100%;
+    padding: $spacing-2xl $spacing-xl;
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .login-left,
+  .register-left {
+    min-height: 28vh;
+    padding: $spacing-xl $spacing-lg;
+  }
+
+  .login-right,
+  .register-right {
+    padding: $spacing-xl $spacing-lg;
+  }
+
+  .login-header,
+  .register-header {
+    margin-bottom: $spacing-xl;
+
+    h2 {
+      font-size: 28px;
+    }
+  }
+}

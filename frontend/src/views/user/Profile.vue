@@ -2,7 +2,7 @@
   <div class="profile base-detail-page">
     <el-row :gutter="20">
       <!-- 左侧用户信息 -->
-      <el-col :span="8">
+      <el-col :xs="24" :sm="24" :md="8">
         <el-card class="user-card">
           <div class="user-avatar">
             <el-avatar :size="100" :src="userAvatar">
@@ -32,7 +32,7 @@
       </el-col>
 
       <!-- 右侧设置 -->
-      <el-col :span="16">
+      <el-col :xs="24" :sm="24" :md="16">
         <el-card class="settings-card">
           <el-tabs v-model="activeTab">
             <!-- 基本信息 -->
@@ -79,37 +79,41 @@
 
             <!-- 考试记录 -->
             <el-tab-pane label="考试记录" name="exams" v-if="isStudent">
-              <el-table :data="examSessions" v-loading="loadingExams">
+              <el-table :data="examSessions" v-loading="loadingExams" table-layout="auto" :fit="true">
                 <el-table-column prop="examTitle" label="考试名称" min-width="200">
                   <template #default="{ row }">
-                    {{ getExamTitle(row.examId) }}
+                    {{ getExamTitle(row) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="startedAt" label="开始时间" width="180">
+                <el-table-column prop="startedAt" label="开始时间" min-width="168">
                   <template #default="{ row }">
                     {{ formatDate(row.startedAt) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="submittedAt" label="提交时间" width="180">
+                <el-table-column prop="submittedAt" label="提交时间" min-width="168">
                   <template #default="{ row }">
                     {{ formatDate(row.submittedAt) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="score" label="得分" width="100">
+                <el-table-column prop="score" label="得分" min-width="88">
                   <template #default="{ row }">
                     <span :class="{ 'high-score': row.score >= 60, 'low-score': row.score < 60 }">
                       {{ row.score ?? '-' }}
                     </span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="status" label="状态" width="100">
+                <el-table-column prop="status" label="状态" min-width="100">
                   <template #default="{ row }">
                     <el-tag size="small">{{ getSessionStatusName(row.status) }}</el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="100">
+                <el-table-column label="操作" min-width="100">
                   <template #default="{ row }">
-                    <el-button size="small" @click="viewResult(row)">查看</el-button>
+                    <ActionButtons
+                      :show-edit="false"
+                      :show-delete="false"
+                      @view="viewResult(row)"
+                    />
                   </template>
                 </el-table-column>
               </el-table>
@@ -117,23 +121,27 @@
 
             <!-- 我的课程 -->
             <el-tab-pane label="我的课程" name="courses" v-if="isStudent">
-              <el-table :data="myCourses" v-loading="loadingCourses">
+              <el-table :data="myCourses" v-loading="loadingCourses" table-layout="auto" :fit="true">
                 <el-table-column prop="name" label="课程名称" min-width="200" />
-                <el-table-column prop="code" label="课程代码" width="120" />
-                <el-table-column label="教师" width="120">
+                <el-table-column prop="code" label="课程代码" min-width="120" />
+                <el-table-column label="教师" min-width="120">
                   <template #default="{ row }">
                     {{ row.teacherName || (row.teacherId ? `教师#${row.teacherId}` : '-') }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="credits" label="学分" width="80" />
-                <el-table-column prop="status" label="状态" width="100">
+                <el-table-column prop="credits" label="学分" min-width="84" />
+                <el-table-column prop="status" label="状态" min-width="100">
                   <template #default="{ row }">
                     <el-tag size="small">{{ row.status === 'ACTIVE' ? '进行中' : '已结束' }}</el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="100">
+                <el-table-column label="操作" min-width="100">
                   <template #default="{ row }">
-                    <el-button size="small" @click="goToCourse(row)">查看</el-button>
+                    <ActionButtons
+                      :show-edit="false"
+                      :show-delete="false"
+                      @view="goToCourse(row)"
+                    />
                   </template>
                 </el-table-column>
               </el-table>
@@ -158,6 +166,7 @@ import { formatDate, getRoleName as formatRoleName, getSessionStatusName } from 
 import { getErrorMessage } from '@/utils/error'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Course, ExamSession } from '@/types'
+import ActionButtons from '@/components/ActionButtons.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -223,9 +232,8 @@ function getRoleName(role?: string) {
   return role ? formatRoleName(role) : ''
 }
 
-function getExamTitle(examId: number): string {
-  // 可以从缓存中获取考试名称
-  return `考试 #${examId}`
+function getExamTitle(session: ExamSession & { examTitle?: string }): string {
+  return session.examTitle || `考试 #${session.examId}`
 }
 
 async function loadStats() {

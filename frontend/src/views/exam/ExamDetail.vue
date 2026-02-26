@@ -32,21 +32,21 @@
 
       <!-- 题目列表 -->
       <h4 class="section-title">题目列表</h4>
-      <el-table :data="displayQuestionRows" border v-if="displayQuestionRows.length">
+      <el-table :data="displayQuestionRows" border v-if="displayQuestionRows.length" table-layout="auto" :fit="true">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column label="题目内容" min-width="300">
           <template #default="{ row }">
             <div>{{ row.content }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="题型" width="100">
+        <el-table-column label="题型" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getTypeColor(row.type)" size="small">
               {{ getTypeName(row.type) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="score" label="分值" width="80" />
+        <el-table-column prop="score" label="分值" min-width="84" />
       </el-table>
 
       <!-- 操作按钮 -->
@@ -210,8 +210,9 @@ function getTypeName(type?: string) {
     FILL_BLANK: '填空题',
     ESSAY: '简答题',
     MANUAL: '手动组卷',
-    RANDOM: '随机组卷',
-    MIXED: '混合组卷'
+    AUTO: '自动组卷',
+    RANDOM: '自动组卷',
+    MIXED: '自动组卷'
   }
   return map[type] || type
 }

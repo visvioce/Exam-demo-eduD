@@ -34,13 +34,13 @@ public enum QuestionTypeEnum {
      * 是否是客观题
      */
     public boolean isObjective() {
-        return this == SINGLE_CHOICE || this == MULTIPLE_CHOICE || this == TRUE_FALSE;
+        return this == SINGLE_CHOICE || this == MULTIPLE_CHOICE || this == TRUE_FALSE || this == FILL_BLANK;
     }
 
     /**
      * 是否是主观题
      */
     public boolean isSubjective() {
-        return this == FILL_BLANK || this == ESSAY;
+        return this == ESSAY;
     }
 }

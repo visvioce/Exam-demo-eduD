@@ -26,16 +26,16 @@
 
           <div v-for="(pq, index) in form.questions" :key="index" class="question-row">
             <span class="question-index-label">{{ index + 1 }}.</span>
-            <el-select v-model="pq.questionId" placeholder="选择题目" class="question-select" filterable @change="updateTotalScore">
+            <el-select v-model="pq.questionId" placeholder="选择题目" class="question-select" filterable>
               <el-option
                 v-for="q in questions"
                 :key="q.id"
-                :label="`${q.id}. ${q.content.substring(0, 50)}... (${getTypeName(q.type)})`"
+                :label="getQuestionOptionLabel(q)"
                 :value="q.id"
               />
             </el-select>
-            <el-input-number v-model="pq.score" :min="1" :max="100" @change="updateTotalScore" />
-            <el-button type="danger" @click="removeQuestion(index)" :icon="Delete" circle size="small" />
+            <el-input-number v-model="pq.score" :min="1" :max="100" />
+            <DeleteActionButton aria-label="删除题目" @click="removeQuestion(index)" />
           </div>
           <div class="add-buttons">
             <el-button type="primary" @click="showQuestionSelector" size="small">从题库选择</el-button>
@@ -80,12 +80,14 @@
       <el-table
         :data="questionTableData"
         @selection-change="handleSelectionChange"
-        v-loading="questionsLoading"
+        table-layout="fixed"
+        :fit="true"
         max-height="450"
+        class="selector-table"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column label="题目内容" min-width="300">
+        <el-table-column prop="id" label="ID" width="64" />
+        <el-table-column label="题目内容" min-width="280">
           <template #default="{ row }">
             <div class="question-preview-cell">
               <div class="question-type-tag">
@@ -113,8 +115,8 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="subject" label="学科" width="100" />
-        <el-table-column prop="score" label="默认分值" width="90">
+        <el-table-column prop="subject" label="学科" min-width="96" />
+        <el-table-column prop="score" label="默认分值" min-width="92">
           <template #default="{ row }">
             <el-input-number
               v-model="row.score"
@@ -155,9 +157,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules, MessageBoxData } from 'element-plus'
 import type { Paper, PaperQuestion, Question, Course } from '@/types'
+import DeleteActionButton from '@/components/DeleteActionButton.vue'
 
 const props = defineProps<{
   courses: Course[]
@@ -172,7 +174,6 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
-const questionsLoading = ref(false)
 const questionSelectorVisible = ref(false)
 const selectedQuestions = ref<Question[]>([])
 
@@ -266,6 +267,12 @@ function getTypeName(type: string) {
   return map[type] || type
 }
 
+function getQuestionOptionLabel(question: Question): string {
+  const compact = (question.content || '').replace(/\s+/g, ' ').trim()
+  const preview = compact.length > 50 ? `${compact.slice(0, 50)}...` : compact
+  return `${question.id}. ${preview} (${getTypeName(question.type)})`
+}
+
 function getTypeColor(type: string) {
   const map: Record<string, string> = {
     SINGLE_CHOICE: 'primary',
@@ -297,10 +304,6 @@ function getDifficultyColor(difficulty: string) {
 
 function removeQuestion(index: number) {
   form.questions.splice(index, 1)
-  updateTotalScore()
-}
-
-function updateTotalScore() {
 }
 
 function showQuestionSelector() {
@@ -330,13 +333,19 @@ function handleSelectionChange(selection: Question[]) {
 }
 
 function confirmSelectQuestions() {
+  let addedCount = 0
   selectedQuestions.value.forEach(q => {
     if (!form.questions.find(pq => pq.questionId === q.id)) {
       form.questions.push({ questionId: q.id, score: q.score })
+      addedCount += 1
     }
   })
   questionSelectorVisible.value = false
-  ElMessage.success(`已添加 ${selectedQuestions.value.length} 道题目`)
+  if (addedCount === 0) {
+    ElMessage.info('所选题目已全部存在')
+    return
+  }
+  ElMessage.success(`已添加 ${addedCount} 道题目`)
 }
 
 function batchSetScore() {
@@ -435,6 +444,7 @@ defineExpose({
   .questions-editor {
     .batch-operations {
       display: flex;
+      flex-wrap: wrap;
       gap: $spacing-sm;
       align-items: center;
       margin-bottom: $spacing-md;
@@ -451,6 +461,7 @@ defineExpose({
 
     .question-row {
       display: flex;
+      flex-wrap: wrap;
       gap: $spacing-md;
       margin-bottom: $spacing-md;
       align-items: center;
@@ -465,6 +476,7 @@ defineExpose({
     .add-buttons {
       margin-top: $spacing-md;
     }
+
   }
 
   .question-select {
@@ -472,19 +484,19 @@ defineExpose({
   }
 
   .filter-type {
-    width: 120px;
+    width: 128px;
   }
 
   .filter-difficulty {
-    width: 100px;
+    width: 108px;
   }
 
   .filter-subject {
-    width: 150px;
+    width: 160px;
   }
 
   .filter-keyword {
-    width: 200px;
+    width: 220px;
   }
 
   .difficulty-tag {
@@ -506,6 +518,36 @@ defineExpose({
 
   .selector-filter-card {
     margin-bottom: $spacing-lg;
+
+    :deep(.el-form) {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-xs $spacing-sm;
+      align-items: center;
+
+      .el-form-item {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .selector-table {
+    :deep(.el-table__header th) {
+      background: $bg-secondary;
+      color: $text-tertiary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+    }
+
+    :deep(.el-table__body td) {
+      vertical-align: top;
+    }
+
+    :deep(.el-table .cell) {
+      padding: $spacing-sm $spacing-sm;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
   }
 
   .question-preview-cell {
@@ -555,6 +597,28 @@ defineExpose({
     margin-top: $spacing-lg;
     display: flex;
     justify-content: flex-end;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    .questions-editor {
+      .batch-operations {
+        .question-count {
+          margin-left: 0;
+          width: 100%;
+        }
+      }
+    }
+
+    .question-select {
+      flex: 1 1 100%;
+    }
+
+    .filter-type,
+    .filter-difficulty,
+    .filter-subject,
+    .filter-keyword {
+      width: min(220px, 100%);
+    }
   }
 }
 </style>

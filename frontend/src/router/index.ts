@@ -157,8 +157,12 @@ router.beforeEach(async (to, _from, next) => {
 
     // 刷新后先恢复用户信息，避免角色判断误拦截
     if (!authStore.user) {
-      await authStore.getCurrentUser()
-      if (!authStore.user) {
+      const loaded = await authStore.getCurrentUser()
+      if (!loaded || !authStore.user) {
+        if (authStore.token) {
+          next(false)
+          return
+        }
         next({ name: 'Login', query: { redirect: to.fullPath } })
         return
       }

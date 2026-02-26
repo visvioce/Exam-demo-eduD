@@ -8,6 +8,7 @@ import com.southcollege.exam.dto.response.PageResult;
 import com.southcollege.exam.dto.response.Result;
 import com.southcollege.exam.entity.Exam;
 import com.southcollege.exam.entity.ExamSession;
+import com.southcollege.exam.enums.ExamStatusEnum;
 import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.service.CourseService;
 import com.southcollege.exam.service.ExamService;
@@ -58,13 +59,7 @@ public class ExamController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<Exam>> list(HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String userRole = SecurityUtil.getCurrentUserRole(request);
-
-        if (!RoleEnum.ADMIN.getCode().equals(userRole)) {
-            // 非管理员只能查看自己的考试
-            return Result.success(examService.getByTeacherId(userId));
-        }
-        return Result.success(examService.listWithDisplayFields());
+        return Result.success(examService.getByTeacherId(userId));
     }
 
     /**
@@ -100,11 +95,8 @@ public class ExamController {
         Long userId = SecurityUtil.getCurrentUserId(request);
         String userRole = SecurityUtil.getCurrentUserRole(request);
 
-        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
-            // 管理员可以查看所有考试
-            return Result.success(exam);
-        } else if (RoleEnum.TEACHER.getCode().equals(userRole)) {
-            // 教师只能查看自己的考试
+        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
+            // 教师（含管理员角色）只能查看自己的考试
             if (!exam.getTeacherId().equals(userId)) {
                 throw new com.southcollege.exam.exception.BusinessException("无权查看该考试");
             }
@@ -134,6 +126,8 @@ public class ExamController {
         Exam exam = new Exam();
         BeanUtils.copyProperties(examRequest, exam);
         exam.setTeacherId(teacherId);
+        // 新建考试统一落库为草稿，避免依赖数据库默认值造成状态为空
+        exam.setStatus(ExamStatusEnum.DRAFT.getCode());
         return Result.success(examService.save(exam));
     }
 

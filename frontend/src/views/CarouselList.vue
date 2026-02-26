@@ -12,18 +12,20 @@
     <el-card class="search-card">
       <el-form :model="searchForm" label-width="80px">
         <el-form-item label="关键字">
-          <el-input v-model="searchForm.keyword" placeholder="轮播图标题" clearable @input="handleKeywordInput" style="width: 200px;" />
+          <el-input v-model="searchForm.keyword" placeholder="轮播图标题" clearable @input="handleKeywordInput" class="search-control" />
         </el-form-item>
         <el-form-item label="状态">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in statusOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.status === item.value }]"
+              :aria-pressed="searchForm.status === item.value"
               @click="handleStatusChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item>
@@ -57,12 +59,11 @@
           </div>
         </div>
         <div class="card-actions">
-          <el-button type="primary" size="small" @click="handleEdit(carousel)">
-            编辑
-          </el-button>
-          <el-button type="danger" size="small" @click="handleDelete(carousel)">
-            删除
-          </el-button>
+          <ActionButtons
+            :show-view="false"
+            @edit="handleEdit(carousel)"
+            @delete="handleDelete(carousel)"
+          />
         </div>
       </el-card>
     </div>
@@ -117,6 +118,7 @@ import { Plus, Link } from '@element-plus/icons-vue'
 import { getErrorMessage } from '@/utils/error'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Carousel } from '@/types'
+import ActionButtons from '@/components/ActionButtons.vue'
 
 const authStore = useAuthStore()
 

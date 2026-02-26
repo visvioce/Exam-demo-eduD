@@ -8,7 +8,6 @@ import com.southcollege.exam.entity.Course;
 import com.southcollege.exam.entity.Exam;
 import com.southcollege.exam.entity.Paper;
 import com.southcollege.exam.entity.Question;
-import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.exception.BusinessException;
 import com.southcollege.exam.mapper.PaperMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +80,7 @@ public class PaperService extends ServiceImpl<PaperMapper, Paper> {
         if (paper == null) {
             throw new BusinessException("试卷不存在");
         }
-        if (!RoleEnum.ADMIN.getCode().equals(userRole) && !paper.getTeacherId().equals(userId)) {
+        if (!paper.getTeacherId().equals(userId)) {
             throw new BusinessException("无权操作该试卷");
         }
     }

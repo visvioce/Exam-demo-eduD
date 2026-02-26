@@ -77,7 +77,7 @@
           <!-- 用户信息 -->
           <el-dropdown @command="handleCommand" class="user-dropdown">
             <div class="user-info">
-              <el-avatar :size="32" class="user-avatar">
+              <el-avatar :size="32" :src="authStore.user?.avatar || ''" class="user-avatar">
                 <el-icon><User /></el-icon>
               </el-avatar>
               <span class="username">{{ authStore.user?.nickname || authStore.user?.username }}</span>
@@ -263,6 +263,7 @@ async function handleCommand(command: string) {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   overflow: hidden;
   background: $bg-page;
 }
@@ -282,10 +283,19 @@ async function handleCommand(command: string) {
     align-items: center;
     gap: $spacing-md;
     flex: 1;
+    min-width: 0;
 
     :deep(.el-breadcrumb) {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+
       .el-breadcrumb__inner {
         color: $text-tertiary;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         &:hover {
           color: $text-primary;
@@ -314,7 +324,9 @@ async function handleCommand(command: string) {
         cursor: pointer;
         padding: $spacing-sm $spacing-md;
         border-radius: $radius-sm;
-        transition: background $transition-fast;
+        transition: background-color $transition-fast;
+        min-width: 0;
+        max-width: 280px;
 
         &:hover {
           background: $bg-hover;
@@ -324,12 +336,22 @@ async function handleCommand(command: string) {
           background: $bg-hover;
           color: $text-tertiary;
           font-size: $font-size-sm;
+          border: 1px solid $border-color;
+          flex-shrink: 0;
+
+          :deep(img) {
+            object-fit: cover;
+          }
         }
 
         .username {
           font-size: $font-size-sm;
           color: $text-secondary;
-          font-weight: 500;
+          font-weight: $font-weight-medium;
+          letter-spacing: 0.01em;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
     }
@@ -350,9 +372,11 @@ async function handleCommand(command: string) {
 // ===== 主内容区域 =====
 .main-content {
   flex: 1;
+  min-width: 0;
   background: $bg-page;
   padding: $spacing-xl;
   overflow-y: auto;
+  overflow-x: hidden;
 
   // 内容卡片
   .content-card {

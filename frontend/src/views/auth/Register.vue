@@ -1,30 +1,25 @@
 <template>
   <div class="register-container">
-    <!-- 左侧黑色装饰区域 -->
     <div class="register-left">
       <div class="left-content">
-        <h1 class="brand-title">南方学院</h1>
-        <p class="brand-subtitle">在线考试系统</p>
-
-        <!-- 装饰元素 -->
-        <div class="decorative-elements">
-          <div class="circle circle-1"></div>
-          <div class="circle circle-2"></div>
-          <div class="circle circle-3"></div>
-        </div>
+        <p class="auth-kicker">Create Your Account</p>
+        <h1 class="brand-title">开始你的学习旅程</h1>
+        <p class="brand-subtitle">注册后默认身份为学生，可直接加入课程并参与考试。</p>
+        <ul class="feature-list">
+          <li>课程、试卷、考试流程一体化</li>
+          <li>清晰的黑白极简交互风格</li>
+          <li>支持自动组卷与在线答题</li>
+        </ul>
       </div>
     </div>
 
-    <!-- 右侧注册表单区域 -->
     <div class="register-right">
       <div class="register-content">
-        <!-- 标题 -->
         <div class="register-header">
           <h2>创建账户</h2>
           <p class="register-subtitle">加入我们的学习平台</p>
         </div>
 
-        <!-- 注册表单 -->
         <el-form :model="registerForm" :rules="rules" ref="registerFormRef" class="register-form">
           <el-form-item prop="username" class="form-item">
             <el-input
@@ -76,7 +71,6 @@
           </el-form-item>
         </el-form>
 
-        <!-- 底部链接 -->
         <div class="register-footer">
           <router-link to="/login" class="login-link">
             已有账号？立即登录
@@ -161,78 +155,80 @@ async function handleRegister() {
 @use '@/styles/design-tokens.scss' as *;
 @use '@/styles/views/auth-form-shared.scss';
 
-// 左侧黑色装饰区域
 .register-left {
-  flex: 0 0 45%;
+  flex: 0 0 44%;
   background: $black;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+  color: #ffffff;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.08) 0%, transparent 45%),
+      radial-gradient(circle at 88% 24%, rgba(255, 255, 255, 0.12), transparent 38%);
+    opacity: 0.7;
+  }
 
   .left-content {
     position: relative;
-    z-index: 2;
-    text-align: center;
-    color: #ffffff;
+    z-index: 1;
+    max-width: 460px;
+
+    .auth-kicker {
+      margin: 0 0 $spacing-lg;
+      font-size: $font-size-sm;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.68);
+    }
 
     .brand-title {
-      font-size: 56px;
-      font-weight: 700;
-      margin: 0 0 16px 0;
-      letter-spacing: 4px;
+      margin: 0 0 $spacing-md;
+      font-size: clamp(34px, 4.4vw, 48px);
       line-height: 1.2;
+      letter-spacing: 0.02em;
+      font-weight: 640;
     }
 
     .brand-subtitle {
-      font-size: 20px;
       margin: 0;
-      opacity: 0.8;
-      letter-spacing: 2px;
-      font-weight: 300;
+      font-size: $font-size-lg;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.74);
+    }
+
+    .feature-list {
+      margin: $spacing-2xl 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: $spacing-md;
+
+      li {
+        position: relative;
+        padding-left: $spacing-lg;
+        font-size: $font-size-sm;
+        color: rgba(255, 255, 255, 0.66);
+        line-height: 1.6;
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 9px;
+          width: 6px;
+          height: 6px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.52);
+        }
+      }
     }
   }
+}
 
-  // 装饰圆形元素
-  .decorative-elements {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1;
-
-    .circle {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .circle-1 {
-      width: 400px;
-      height: 400px;
-      top: -200px;
-      right: -100px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .circle-2 {
-      width: 300px;
-      height: 300px;
-      bottom: -150px;
-      left: -50px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .circle-3 {
-      width: 200px;
-      height: 200px;
-      top: 50%;
-      right: 10%;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-  }
+.register-content {
+  max-width: 440px;
 }
 
 .register-form {
@@ -262,61 +258,17 @@ async function handleRegister() {
   }
 }
 
-// 移动端适配
-@media (max-width: 968px) {
-  .register-container {
-    flex-direction: column;
-  }
-
+@media (max-width: 1024px) {
   .register-left {
-    flex: 0 0 auto;
-    min-height: 35vh;
-    padding: 50px 20px;
-
     .left-content {
-      .brand-title {
-        font-size: 36px;
-        letter-spacing: 2px;
-      }
-
-      .brand-subtitle {
-        font-size: 16px;
-      }
+      max-width: 600px;
     }
 
-    .decorative-elements {
-      .circle-1 {
-        width: 250px;
-        height: 250px;
-        top: -100px;
-        right: -50px;
-      }
+    .feature-list {
+      margin-top: $spacing-lg;
 
-      .circle-2 {
-        width: 200px;
-        height: 200px;
-        bottom: -80px;
-        left: -30px;
-      }
-
-      .circle-3 {
-        width: 150px;
-        height: 150px;
-      }
-    }
-  }
-
-  .register-right {
-    flex: 1;
-    padding: 40px 20px;
-  }
-
-  .register-content {
-    .register-header {
-      margin-bottom: 32px;
-
-      h2 {
-        font-size: 28px;
+      li {
+        margin: 0;
       }
     }
   }

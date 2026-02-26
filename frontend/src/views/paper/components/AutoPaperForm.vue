@@ -16,8 +16,8 @@
       <el-divider content-position="left">题目配置</el-divider>
 
       <div class="table-wrapper">
-        <el-table :data="rows" stripe border class="config-table">
-          <el-table-column label="题型" width="120">
+        <el-table :data="rows" stripe border class="config-table" table-layout="fixed" :fit="true">
+          <el-table-column label="题型" min-width="116">
             <template #default="{ row }">
               <el-select v-model="row.type" placeholder="题型" class="full-select" size="small">
                 <el-option label="单选题" value="SINGLE_CHOICE" />
@@ -28,14 +28,14 @@
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="学科" width="140">
+          <el-table-column label="学科" min-width="152">
             <template #default="{ row }">
               <el-select v-model="row.subject" placeholder="学科" clearable allow-create filterable class="full-select" size="small">
                 <el-option v-for="subject in subjects" :key="subject" :label="subject" :value="subject" />
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="难度" width="90">
+          <el-table-column label="难度" min-width="96">
             <template #default="{ row }">
               <el-select v-model="row.difficulty" placeholder="难度" clearable class="full-select" size="small">
                 <el-option label="简单" value="EASY" />
@@ -44,26 +44,24 @@
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="题数" width="80">
+          <el-table-column label="题数" min-width="92">
             <template #default="{ row }">
               <el-input-number v-model="row.count" :min="1" :max="100" controls-position="right" size="small" class="num-input" />
             </template>
           </el-table-column>
-          <el-table-column label="分值" width="80">
+          <el-table-column label="分值" min-width="92">
             <template #default="{ row }">
               <el-input-number v-model="row.score" :min="1" :max="100" controls-position="right" size="small" class="num-input" />
             </template>
           </el-table-column>
-          <el-table-column label="小计" width="70" align="center">
+          <el-table-column label="小计" min-width="72" align="center">
             <template #default="{ row }">
               <span class="subtotal">{{ row.count * row.score }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="60" align="center">
+          <el-table-column label="操作" min-width="68" align="center">
             <template #default="{ $index }">
-              <el-button link type="danger" size="small" @click="removeRow($index)">
-                <el-icon><Delete /></el-icon>
-              </el-button>
+              <DeleteActionButton aria-label="删除配置行" button-class="row-delete-btn" @click="removeRow($index)" />
             </template>
           </el-table-column>
           <template #empty>
@@ -96,9 +94,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Course } from '@/types'
+import DeleteActionButton from '@/components/DeleteActionButton.vue'
 
 interface PaperRow {
   type: string
@@ -135,9 +134,7 @@ const formRef = ref<FormInstance>()
 const form = reactive({
   name: '',
   description: '',
-  courseId: null as number | null,
-  subject: '',
-  difficulty: ''
+  courseId: null as number | null
 })
 
 const rows = ref<PaperRow[]>([
@@ -209,6 +206,11 @@ defineExpose({
 @use '@/styles/design-tokens.scss' as *;
 
 .auto-paper-form {
+  :deep(.el-form-item__label) {
+    color: $text-secondary;
+    font-weight: $font-weight-medium;
+  }
+
   .full-width {
     width: 100%;
   }
@@ -222,41 +224,97 @@ defineExpose({
   }
 
   .table-wrapper {
-    overflow-x: auto;
+    margin-top: $spacing-sm;
+    width: 100%;
+    border-radius: 12px;
+    background: $bg-primary;
+    overflow: hidden;
   }
 
   .config-table {
     width: 100%;
+    --el-table-border-color: #{$border-color};
+    --el-table-header-bg-color: #{$bg-secondary};
+    --el-table-row-hover-bg-color: #{$bg-hover};
+
+    :deep(.el-table__inner-wrapper::before) {
+      display: none;
+    }
+
+    :deep(.el-table__header-wrapper),
+    :deep(.el-table__body-wrapper) {
+      width: 100%;
+    }
+
+    :deep(.el-table__header th) {
+      height: 42px;
+      color: $text-tertiary;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      border-bottom-color: $border-color;
+
+      .cell {
+        white-space: nowrap;
+      }
+    }
 
     :deep(.el-table__body td) {
-      padding: 8px 0;
+      padding: 10px 0;
+      border-bottom-color: $border-light;
+    }
+
+    :deep(.el-table .cell) {
+      padding: 0 10px;
     }
 
     :deep(.el-select) {
       .el-input__wrapper {
+        border-radius: 8px;
+        background: $bg-primary;
         box-shadow: 0 0 0 1px $border-color inset;
 
         &:hover {
-          box-shadow: 0 0 0 1px #c0c4cc inset;
+          box-shadow: 0 0 0 1px #{$text-quaternary} inset;
         }
 
         &.is-focus {
-          box-shadow: 0 0 0 1px $primary inset;
+          box-shadow: 0 0 0 1px #{$text-tertiary} inset;
         }
       }
     }
 
     :deep(.el-input-number) {
+      width: 100%;
+
       .el-input__wrapper {
         padding: 0 8px;
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px $border-color inset;
+      }
+
+      .el-input-number__increase,
+      .el-input-number__decrease {
+        background: transparent;
+        border-left-color: $border-light;
       }
     }
 
     .subtotal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 26px;
+      padding: 0 $spacing-sm;
       font-weight: 600;
-      color: $primary;
-      font-size: 13px;
+      color: $text-primary;
+      font-size: 12px;
+      border: 1px solid $border-color;
+      border-radius: 999px;
+      background: $bg-hover;
     }
+
   }
 
   .table-empty {
@@ -273,27 +331,46 @@ defineExpose({
     width: 100%;
     margin-top: 15px;
     border-color: $border-color;
+    color: $text-secondary;
+    border-radius: 10px;
+    height: 38px;
+
+    &:hover {
+      color: $text-primary;
+      border-color: $text-quaternary;
+      background: $bg-hover;
+    }
   }
 
   .summary-card {
     display: flex;
-    gap: $spacing-xl;
+    justify-content: flex-end;
+    gap: $spacing-lg;
+    margin-top: $spacing-md;
     padding: $spacing-lg;
     background: $bg-secondary;
-    border-radius: $radius-md;
+    border: 1px solid $border-color;
+    border-radius: 12px;
 
     .summary-item {
       display: flex;
       align-items: center;
-      gap: $spacing-sm;
-      font-size: $font-size-base;
-      color: $text-secondary;
+      gap: 6px;
+      font-size: $font-size-sm;
+      color: $text-tertiary;
 
       .highlight {
         font-weight: 600;
-        color: $primary;
-        font-size: $font-size-lg;
+        color: $text-primary;
+        font-size: 18px;
       }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .summary-card {
+      justify-content: space-between;
+      padding: $spacing-md;
     }
   }
 }

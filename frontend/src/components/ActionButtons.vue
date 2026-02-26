@@ -1,72 +1,70 @@
 <template>
   <div class="action-buttons">
-    <el-tooltip content="查看" placement="top" v-if="showView">
-      <el-button 
-        size="small" 
-        @click="$emit('view')"
-        class="action-btn view-btn"
-      >
-        <el-icon><View /></el-icon>
-      </el-button>
-    </el-tooltip>
-    <el-tooltip content="编辑" placement="top" v-if="showEdit">
-      <el-button 
-        size="small" 
-        type="primary" 
-        @click="$emit('edit')"
-        class="action-btn edit-btn"
-      >
-        <el-icon><Edit /></el-icon>
-      </el-button>
-    </el-tooltip>
-    <el-tooltip content="删除" placement="top" v-if="showDelete">
-      <el-button 
-        size="small" 
-        type="danger" 
-        @click="$emit('delete')"
-        class="action-btn delete-btn"
-      >
-        <el-icon><Delete /></el-icon>
-      </el-button>
-    </el-tooltip>
+    <IconActionButton
+      v-if="showView"
+      :icon="View"
+      tooltip="查看"
+      show-tooltip
+      aria-label="查看"
+      button-class="view-btn"
+      @click="$emit('view')"
+    />
+    <IconActionButton
+      v-if="showEdit"
+      :icon="Edit"
+      tooltip="编辑"
+      show-tooltip
+      aria-label="编辑"
+      type="primary"
+      @click="$emit('edit')"
+    />
+    <IconActionButton
+      v-if="showDelete"
+      :icon="Close"
+      tooltip="删除"
+      show-tooltip
+      aria-label="删除"
+      type="danger"
+      @click="$emit('delete')"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { View, Edit, Delete } from '@element-plus/icons-vue'
+import { View, Edit, Close } from '@element-plus/icons-vue'
+import IconActionButton from './IconActionButton.vue'
 
-defineProps({
-  showView: {
-    type: Boolean,
-    default: true
-  },
-  showEdit: {
-    type: Boolean,
-    default: true
-  },
-  showDelete: {
-    type: Boolean,
-    default: true
-  }
+withDefaults(defineProps<{
+  showView?: boolean
+  showEdit?: boolean
+  showDelete?: boolean
+}>(), {
+  showView: true,
+  showEdit: true,
+  showDelete: true
 })
 
-defineEmits(['view', 'edit', 'delete'])
+defineEmits<{
+  (e: 'view'): void
+  (e: 'edit'): void
+  (e: 'delete'): void
+}>()
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/styles/design-tokens.scss' as *;
+
 .action-buttons {
   display: inline-flex;
-  gap: 8px;
+  gap: $spacing-xs;
   align-items: center;
 }
 
-.action-btn {
-  padding: 5px 10px !important;
-  border-radius: 4px !important;
-  min-width: 32px;
-}
+.view-btn {
+  color: $text-tertiary;
 
-.action-btn :deep(.el-icon) {
-  font-size: 14px;
+  &:hover {
+    color: $text-primary;
+  }
 }
 </style>

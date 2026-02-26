@@ -41,6 +41,7 @@ export interface Course {
   name: string
   code: string
   description?: string
+  coverUrl?: string
   teacherId: number
   teacherName?: string
   credits: number

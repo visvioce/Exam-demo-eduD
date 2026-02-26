@@ -26,18 +26,17 @@
             <el-option
               v-for="model in config.models"
               :key="`${config.id}-${model}`"
-              :label="model"
+              :label="formatModelOptionLabel(config.name, model)"
               :value="`${config.id}:${model}`"
             >
               <div class="option-item">
-                <span class="option-model-name">{{ model }}</span>
-                <span class="option-config-name">{{ config.name }}</span>
+                <span class="option-combined-label">{{ formatModelOptionLabel(config.name, model) }}</span>
               </div>
             </el-option>
           </el-option-group>
         </el-select>
-        <el-tag v-if="activeConfig" type="success" class="active-tag">
-          {{ activeConfig.activeModel }}
+        <el-tag v-if="activeConfig" type="success" class="active-tag" effect="light">
+          {{ currentActiveModelLabel }}
         </el-tag>
       </div>
     </el-card>
@@ -49,8 +48,11 @@
           <div class="card-header">
             <span class="config-name">{{ config.name }}</span>
             <div class="card-actions">
-              <el-button link type="primary" @click="handleEdit(config)">编辑</el-button>
-              <el-button link type="danger" @click="handleDelete(config)">删除</el-button>
+              <ActionButtons
+                :show-view="false"
+                @edit="handleEdit(config)"
+                @delete="handleDelete(config)"
+              />
             </div>
           </div>
         </template>
@@ -220,6 +222,7 @@ import { Plus, Check } from '@element-plus/icons-vue'
 import { getErrorMessage } from '@/utils/error'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { AiConfig } from '@/types'
+import ActionButtons from '@/components/ActionButtons.vue'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -266,6 +269,11 @@ const addModelRules: FormRules = {
 
 const currentRules = computed(() => isEdit.value ? editRules : createRules)
 
+const currentActiveModelLabel = computed(() => {
+  if (!activeConfig.value || !activeConfig.value.activeModel) return ''
+  return formatModelOptionLabel(activeConfig.value.name, activeConfig.value.activeModel)
+})
+
 // 当前激活的模型（格式：configId:model）
 const currentActiveModel = computed({
   get: () => {
@@ -291,6 +299,10 @@ const allModels = computed(() => {
   })
   return result
 })
+
+function formatModelOptionLabel(configName: string, model: string) {
+  return `【${configName}】${model}`
+}
 
 // 根据当前编辑配置的baseUrl获取可用模型
 const availablePresetModels = computed(() => {
@@ -573,24 +585,19 @@ onMounted(() => {
 
 .ai-config-list {
   .model-select {
-    width: 300px;
+    width: min(320px, 100%);
   }
 
   .option-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     width: 100%;
     padding-right: $spacing-sm;
 
-    .option-model-name {
+    .option-combined-label {
       color: $text-primary;
       font-weight: 500;
-    }
-
-    .option-config-name {
-      color: $text-tertiary;
-      font-size: $font-size-sm;
+      font-family: monospace;
     }
   }
 
@@ -609,12 +616,13 @@ onMounted(() => {
   // 全局模型切换器
   .global-model-switcher {
     margin-bottom: $spacing-xl;
-    background: linear-gradient(135deg, rgba($primary, 0.05) 0%, rgba($primary, 0.02) 100%);
-    border: 2px solid $primary;
+    background: $bg-primary;
+    border: 1px solid $border-color;
 
     .switcher-content {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: $spacing-md;
 
       .label {
@@ -622,47 +630,6 @@ onMounted(() => {
         font-weight: $font-weight-medium;
         color: $text-primary;
         white-space: nowrap;
-      }
-    }
-  }
-
-  // 当前激活模型卡片
-  .active-model-card {
-    margin-bottom: $spacing-xl;
-    border: 2px solid $success;
-    background: linear-gradient(135deg, rgba($success, 0.05) 0%, rgba($success, 0.02) 100%);
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .active-model-info {
-      display: flex;
-      gap: $spacing-2xl;
-      flex-wrap: wrap;
-
-      .info-item {
-        display: flex;
-        align-items: center;
-        gap: $spacing-sm;
-
-        .label {
-          color: $text-tertiary;
-          font-size: $font-size-sm;
-        }
-
-        .value {
-          color: $text-primary;
-          font-weight: $font-weight-medium;
-
-          &.url {
-            font-family: monospace;
-            font-size: $font-size-sm;
-            color: $text-secondary;
-          }
-        }
       }
     }
   }
@@ -739,45 +706,6 @@ onMounted(() => {
         .label {
           font-weight: $font-weight-medium;
           color: $text-primary;
-        }
-      }
-
-      .models-list {
-        display: flex;
-        flex-direction: column;
-        gap: $spacing-sm;
-
-        .model-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: $spacing-md;
-          background: $bg-secondary;
-          border-radius: $radius-md;
-          border: 1px solid transparent;
-          transition: all 0.2s ease;
-
-          &.active {
-            background: rgba($success, 0.1);
-            border-color: $success;
-          }
-
-          .model-info {
-            display: flex;
-            align-items: center;
-            gap: $spacing-sm;
-
-            .model-name {
-              font-family: monospace;
-              font-size: $font-size-sm;
-              color: $text-primary;
-            }
-          }
-
-          .model-actions {
-            display: flex;
-            gap: $spacing-xs;
-          }
         }
       }
 

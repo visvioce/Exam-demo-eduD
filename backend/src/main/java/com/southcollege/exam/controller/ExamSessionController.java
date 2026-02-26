@@ -48,14 +48,6 @@ public class ExamSessionController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<ExamSession>> list(HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String userRole = SecurityUtil.getCurrentUserRole(request);
-
-        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
-            List<ExamSession> sessions = examSessionService.list();
-            fillStudentNames(sessions);
-            return Result.success(sessions);
-        }
-        // 教师只能查看自己考试的记录
         List<ExamSession> sessions = examSessionService.getByTeacherId(userId);
         fillStudentNames(sessions);
         return Result.success(sessions);
@@ -76,32 +68,25 @@ public class ExamSessionController {
             @Parameter(description = "评分状态") @RequestParam(required = false) String gradingStatus,
             HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         Page<ExamSession> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
         LambdaQueryWrapper<ExamSession> wrapper = new LambdaQueryWrapper<>();
 
-        // 数据隔离：教师只能查看自己考试的记录
-        if (!RoleEnum.ADMIN.getCode().equals(userRole)) {
-            // 获取该教师创建的所有考试ID
-            List<Long> teacherExamIds = examService.getByTeacherId(userId).stream()
-                    .map(Exam::getId)
-                    .toList();
-            if (teacherExamIds.isEmpty()) {
-                // 该教师没有考试，返回空结果
-                return Result.success(PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize()));
-            }
-            wrapper.in(ExamSession::getExamId, teacherExamIds);
+        // 数据隔离：管理员与教师都只能查看自己考试的记录
+        List<Long> teacherExamIds = examService.getByTeacherId(userId).stream()
+                .map(Exam::getId)
+                .toList();
+        if (teacherExamIds.isEmpty()) {
+            return Result.success(PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize()));
         }
+        wrapper.in(ExamSession::getExamId, teacherExamIds);
 
         // 考试筛选
         if (examId != null) {
-            // 验证教师是否有权限查看该考试
-            if (!RoleEnum.ADMIN.getCode().equals(userRole)) {
-                Exam exam = examService.getById(examId);
-                if (exam == null || !exam.getTeacherId().equals(userId)) {
-                    return Result.error("无权查看该考试的记录");
-                }
+            // 验证是否有权限查看该考试
+            Exam exam = examService.getById(examId);
+            if (exam == null || !exam.getTeacherId().equals(userId)) {
+                return Result.error("无权查看该考试的记录");
             }
             wrapper.eq(ExamSession::getExamId, examId);
         }
@@ -130,24 +115,22 @@ public class ExamSessionController {
     @GetMapping("/{id}")
     public Result<ExamSession> getById(@PathVariable Long id, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         ExamSession session = examSessionService.getById(id);
         if (session == null) {
             return Result.error("记录不存在");
         }
 
-        // 权限校验：只有学生本人、考试教师或管理员可以查看
+        // 权限校验：只有学生本人或考试教师可以查看
         Exam exam = examService.getById(session.getExamId());
         if (exam == null) {
             return Result.error("考试不存在");
         }
 
-        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(userRole);
         boolean isTeacher = exam.getTeacherId().equals(userId);
         boolean isOwner = session.getStudentId().equals(userId);
 
-        if (!isAdmin && !isTeacher && !isOwner) {
+        if (!isTeacher && !isOwner) {
             return Result.error("无权查看该考试记录");
         }
 
@@ -162,7 +145,6 @@ public class ExamSessionController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<ExamSession>> getByExamId(@PathVariable Long examId, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         // 验证权限
         Exam exam = examService.getById(examId);
@@ -170,7 +152,7 @@ public class ExamSessionController {
             return Result.error("考试不存在");
         }
 
-        if (!RoleEnum.ADMIN.getCode().equals(userRole) && !exam.getTeacherId().equals(userId)) {
+        if (!exam.getTeacherId().equals(userId)) {
             return Result.error("无权查看该考试的记录");
         }
 
@@ -191,8 +173,11 @@ public class ExamSessionController {
     @GetMapping("/pending-grading")
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<ExamSession>> getPendingGradingSessions(HttpServletRequest request) {
-        Long teacherId = SecurityUtil.getCurrentUserId(request);
-        return Result.success(examSessionService.getPendingGradingSessions(teacherId));
+        Long userId = SecurityUtil.getCurrentUserId(request);
+        List<ExamSession> sessions = examSessionService.getPendingGradingSessions(userId);
+
+        fillStudentNames(sessions);
+        return Result.success(sessions);
     }
 
     /**
@@ -203,7 +188,6 @@ public class ExamSessionController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<ExamSession>> getPendingGradingByExamId(@PathVariable Long examId, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         // 验证权限
         Exam exam = examService.getById(examId);
@@ -211,11 +195,13 @@ public class ExamSessionController {
             return Result.error("考试不存在");
         }
 
-        if (!RoleEnum.ADMIN.getCode().equals(userRole) && !exam.getTeacherId().equals(userId)) {
+        if (!exam.getTeacherId().equals(userId)) {
             return Result.error("无权查看该考试的记录");
         }
 
-        return Result.success(examSessionService.getPendingGradingByExamId(examId));
+        List<ExamSession> sessions = examSessionService.getPendingGradingByExamId(examId);
+        fillStudentNames(sessions);
+        return Result.success(sessions);
     }
 
     private void fillStudentNames(List<ExamSession> sessions) {
@@ -242,9 +228,22 @@ public class ExamSessionController {
     @PostMapping("/grade")
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<Void> gradeSubjectiveAnswers(@RequestBody GradeSubjectiveRequest request, HttpServletRequest httpRequest) {
-        Long teacherId = SecurityUtil.getCurrentUserId(httpRequest);
-        examService.gradeSubjectiveAnswers(teacherId, request);
+        Long userId = SecurityUtil.getCurrentUserId(httpRequest);
+        String userRole = SecurityUtil.getCurrentUserRole(httpRequest);
+        examService.gradeSubjectiveAnswers(userId, userRole, request);
         return Result.success();
+    }
+
+    /**
+     * 老师触发当前考试批量自动阅卷（客观题重评）
+     */
+    @PostMapping("/exam/{examId}/auto-grade")
+    @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
+    public Result<Integer> autoGradeByExam(@PathVariable Long examId, HttpServletRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        int processedCount = examService.autoGradeByExam(examId, userId, userRole);
+        return Result.success(processedCount);
     }
 
     /**
@@ -253,6 +252,7 @@ public class ExamSessionController {
     @GetMapping("/{id}/result")
     public Result<ExamResultResponse> getExamResult(@PathVariable Long id, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        return Result.success(examService.getExamResult(id, userId));
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        return Result.success(examService.getExamResult(id, userId, userRole));
     }
 }

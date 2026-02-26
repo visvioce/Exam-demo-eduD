@@ -58,8 +58,13 @@ export const useAuthStore = defineStore('auth', () => {
         status: userData.status as User['status'],
         createdAt: userData.createdAt
       }
-    } catch (error) {
-      logout()
+      return true
+    } catch (error: unknown) {
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status === 401 || status === 403) {
+        logout()
+      }
+      return false
     }
   }
 

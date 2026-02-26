@@ -14,95 +14,105 @@
         <template #header>
           <div class="card-header">
             <span>学生考试记录</span>
-            <el-button type="primary" @click="loadSessions">刷新</el-button>
+            <div class="header-actions">
+              <el-button type="warning" @click="handleAutoGrade" :loading="autoGrading">
+                自动阅卷
+              </el-button>
+              <el-button type="primary" @click="openBatchGradeDialog" :disabled="!canBatchGrade">
+                阅卷
+              </el-button>
+              <el-button @click="loadSessions">刷新</el-button>
+            </div>
           </div>
         </template>
 
-        <el-table :data="sessions" stripe>
+        <el-table :data="sessions" stripe table-layout="auto" :fit="true">
           <el-table-column prop="id" label="记录ID" width="80" />
-          <el-table-column label="学生" width="120">
+          <el-table-column label="学生" min-width="120">
             <template #default="{ row }">
               {{ getStudentName(row.studentId) }}
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="status" label="状态" min-width="100">
             <template #default="{ row }">
               <el-tag :type="getStatusColor(row.status)">{{ getStatusName(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="startedAt" label="开始时间" width="180">
+          <el-table-column prop="startedAt" label="开始时间" min-width="168">
             <template #default="{ row }">
               {{ formatDate(row.startedAt) }}
             </template>
           </el-table-column>
-          <el-table-column prop="submittedAt" label="提交时间" width="180">
+          <el-table-column prop="submittedAt" label="提交时间" min-width="168">
             <template #default="{ row }">
               {{ formatDate(row.submittedAt) }}
             </template>
           </el-table-column>
-          <el-table-column prop="score" label="得分" width="80">
+          <el-table-column prop="score" label="得分" min-width="86">
             <template #default="{ row }">
               <span v-if="row.score !== null">{{ row.score }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column prop="totalScore" label="总分" width="80" />
-          <el-table-column prop="gradingStatus" label="评分状态" width="100">
+          <el-table-column prop="totalScore" label="总分" min-width="86" />
+          <el-table-column prop="gradingStatus" label="评分状态" min-width="110">
             <template #default="{ row }">
               <el-tag :type="getGradingStatusColor(row.gradingStatus)">
                 {{ getGradingStatusName(row.gradingStatus) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" fixed="right" width="150">
+          <el-table-column label="操作" min-width="170">
             <template #default="{ row }">
-              <el-button size="small" @click="handleViewDetail(row)">查看详情</el-button>
-              <el-button size="small" type="primary" @click="handleGrade(row)" v-if="row.status === 'SUBMITTED'">
-                评分
-              </el-button>
+              <ActionButtons
+                :show-edit="false"
+                :show-delete="false"
+                @view="handleViewDetail(row)"
+              />
             </template>
           </el-table-column>
         </el-table>
       </el-card>
 
-      <!-- 评分对话框 -->
-      <el-dialog v-model="gradeDialogVisible" title="主观题评分" width="900px">
-        <el-card v-if="currentSession">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="学生">{{ getStudentName(currentSession.studentId) }}</el-descriptions-item>
-            <el-descriptions-item label="总分">{{ currentSession.score }} / {{ currentSession.totalScore }}</el-descriptions-item>
-          </el-descriptions>
+      <!-- 批量阅卷对话框 -->
+      <el-dialog v-model="gradeDialogVisible" title="批量阅卷" width="1100px">
+        <el-table :data="batchGradeRows" v-loading="gradingLoading" table-layout="auto" :fit="true">
+          <el-table-column label="学生" min-width="130">
+            <template #default="{ row }">
+              {{ row.studentName }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="questionContent" label="题目内容" min-width="280" show-overflow-tooltip />
+          <el-table-column label="学生答案" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ formatAnswer(row.studentAnswer) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="给分" min-width="140">
+            <template #default="{ row }">
+              <el-input-number v-model="row.score" :min="0" :max="row.maxScore" />
+              <span class="score-max">/ {{ row.maxScore }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="评语" min-width="180">
+            <template #default="{ row }">
+              <el-input v-model="row.comment" placeholder="评语（可选）" />
+            </template>
+          </el-table-column>
+        </el-table>
 
-          <h4 class="section-title">待评分题目</h4>
-          <el-table :data="subjectiveQuestions" v-loading="gradingLoading">
-            <el-table-column prop="id" label="题目ID" width="80" />
-            <el-table-column label="题目内容" min-width="300">
-              <template #default="{ row }">
-                {{ getQuestionContent(row.questionId) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="studentAnswer" label="学生答案" min-width="200" />
-            <el-table-column label="给分" width="150">
-              <template #default="{ row }">
-                <el-input-number v-model="row.score" :min="0" :max="row.maxScore" />
-              </template>
-            </el-table-column>
-            <el-table-column label="评语" width="200">
-              <template #default="{ row }">
-                <el-input v-model="row.comment" placeholder="评语（可选）" />
-              </template>
-            </el-table-column>
-          </el-table>
+        <el-empty v-if="!gradingLoading && batchGradeRows.length === 0" description="当前考试没有待阅卷的简答题" />
 
-          <div class="submit-grades">
-            <el-button type="primary" @click="handleSubmitGrades" :loading="submittingGrades">提交评分</el-button>
-          </div>
-        </el-card>
+        <div class="submit-grades">
+          <el-button type="primary" @click="handleSubmitBatchGrades" :loading="submittingGrades" :disabled="batchGradeRows.length === 0">
+            提交批量评分
+          </el-button>
+        </div>
       </el-dialog>
 
       <!-- 详情对话框 -->
       <el-dialog v-model="detailDialogVisible" title="考试详情" width="900px">
-        <el-table :data="detailResult?.answers || []" v-loading="detailLoading" stripe>
+        <el-table :data="detailResult?.answers || []" v-loading="detailLoading" stripe table-layout="auto" :fit="true">
           <el-table-column type="index" label="序号" width="60" />
           <el-table-column label="题目内容" min-width="320">
             <template #default="{ row }">
@@ -114,12 +124,12 @@
               {{ formatAnswer(row.answer) }}
             </template>
           </el-table-column>
-          <el-table-column label="得分" width="90">
+          <el-table-column label="得分" min-width="84">
             <template #default="{ row }">
               {{ row.score ?? '-' }}
             </template>
           </el-table-column>
-          <el-table-column label="满分" prop="maxScore" width="90" />
+          <el-table-column label="满分" prop="maxScore" min-width="84" />
           <el-table-column label="评语" min-width="180">
             <template #default="{ row }">
               {{ row.teacherComment || '-' }}
@@ -162,7 +172,7 @@
           <el-divider />
 
           <h4>答题详情</h4>
-          <el-table :data="examResult?.answers || []" stripe>
+          <el-table :data="examResult?.answers || []" stripe table-layout="auto" :fit="true">
             <el-table-column type="index" label="序号" width="60" />
             <el-table-column label="题目内容" min-width="300">
               <template #default="{ row }">
@@ -179,13 +189,13 @@
                 {{ row.teacherComment || '-' }}
               </template>
             </el-table-column>
-            <el-table-column label="得分" width="80">
+            <el-table-column label="得分" min-width="84">
               <template #default="{ row }">
                 <span v-if="row.score !== null">{{ row.score }}</span>
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="100">
+            <el-table-column label="状态" min-width="100">
               <template #default="{ row }">
                 <el-tag :type="row.isCorrect ? 'success' : 'danger'" v-if="row.isCorrect !== undefined">
                   {{ row.isCorrect ? '正确' : '错误' }}
@@ -214,7 +224,8 @@ import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { formatDate, getSessionStatusName as getStatusName, getSessionStatusColor as getStatusColor, getGradingStatusName, getGradingStatusColor } from '@/utils/format'
 import { getErrorMessage } from '@/utils/error'
-import type { Exam, ExamSession, Question, Answer, Paper, ExamResultResponse, User } from '@/types'
+import type { Exam, ExamSession, Question, Paper, ExamResultResponse, User } from '@/types'
+import ActionButtons from '@/components/ActionButtons.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -223,6 +234,7 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const gradingLoading = ref(false)
 const submittingGrades = ref(false)
+const autoGrading = ref(false)
 const gradeDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const detailLoading = ref(false)
@@ -233,22 +245,26 @@ const sessions = ref<ExamSession[]>([])
 const mySession = ref<ExamSession | null>(null)
 const examResult = ref<ExamResultResponse | null>(null)
 const detailResult = ref<ExamResultResponse | null>(null)
-const currentSession = ref<ExamSession | null>(null)
 const questions = ref<Question[]>([])
 const studentNameMap = ref<Record<number, string>>({})
 
 const examId = computed(() => Number(route.params.id))
 const isStudent = computed(() => authStore.user?.role === 'STUDENT')
 
-// 待评分题目（主观题）
-type SubjectiveQuestion = {
+// 批量阅卷题目（仅简答题）
+type BatchGradeRow = {
+  examSessionId: number
+  studentId: number
+  studentName: string
   questionId: number
+  questionContent: string
   studentAnswer: string | string[] | null
   score: number
   maxScore: number
   comment: string
 }
-const subjectiveQuestions = ref<SubjectiveQuestion[]>([])
+const batchGradeRows = ref<BatchGradeRow[]>([])
+const canBatchGrade = computed(() => sessions.value.some((session) => session.status === 'SUBMITTED'))
 
 function goBack() {
   router.back()
@@ -395,26 +411,61 @@ async function handleViewDetail(row: ExamSession) {
   }
 }
 
-function handleGrade(row: ExamSession) {
-  currentSession.value = row
+async function openBatchGradeDialog() {
   gradeDialogVisible.value = true
-  loadSubjectiveQuestions(row)
+  await loadBatchGradeRows()
 }
 
-async function loadSubjectiveQuestions(session: ExamSession) {
+async function loadBatchGradeRows() {
   gradingLoading.value = true
   try {
     await loadQuestions()
-    if (session.answers) {
-      subjectiveQuestions.value = session.answers
-        .filter((a: Answer) => a.questionType === 'ESSAY' || a.questionType === 'FILL_BLANK')
-        .map((a: Answer) => ({
-          questionId: a.questionId,
-          studentAnswer: a.answer,
-          score: a.score || 0,
-          maxScore: getQuestionMaxScore(a.questionId),
-          comment: a.teacherComment || ''
+
+    const submittedSessions = sessions.value.filter((session) => session.status === 'SUBMITTED')
+    if (submittedSessions.length === 0) {
+      batchGradeRows.value = []
+      return
+    }
+
+    const resultList = await Promise.allSettled(
+      submittedSessions.map((session) => examSessionApi.getExamResult(session.id))
+    )
+
+    const rows: BatchGradeRow[] = []
+    let failedCount = 0
+
+    resultList.forEach((result, index) => {
+      const session = submittedSessions[index]
+      if (!session) {
+        failedCount++
+        return
+      }
+      if (result.status !== 'fulfilled') {
+        failedCount++
+        return
+      }
+
+      const answerRows = (result.value.data.answers || [])
+        .filter((answer) => answer.questionType === 'ESSAY')
+        .filter((answer) => answer.gradingStatus === 'PENDING' || answer.score === null || answer.score === undefined)
+        .map((answer) => ({
+          examSessionId: session.id,
+          studentId: session.studentId,
+          studentName: getStudentName(session.studentId),
+          questionId: answer.questionId,
+          questionContent: answer.questionContent || getQuestionContent(answer.questionId),
+          studentAnswer: answer.answer,
+          score: answer.score ?? 0,
+          maxScore: answer.maxScore || getQuestionMaxScore(answer.questionId),
+          comment: answer.teacherComment || ''
         }))
+
+      rows.push(...answerRows)
+    })
+
+    batchGradeRows.value = rows
+    if (failedCount > 0) {
+      ElMessage.warning(`有 ${failedCount} 条考试记录加载失败，请刷新后重试`)
     }
   } catch (error) {
     ElMessage.error('加载题目失败')
@@ -435,27 +486,75 @@ function getQuestionMaxScore(questionId: number): number {
   return 10
 }
 
-async function handleSubmitGrades() {
+async function handleSubmitBatchGrades() {
+  if (batchGradeRows.value.length === 0) {
+    ElMessage.warning('当前没有可提交的简答题评分')
+    return
+  }
+
   submittingGrades.value = true
   try {
-    const grades = subjectiveQuestions.value.map(q => ({
-      questionId: q.questionId,
-      score: q.score,
-      comment: q.comment
-    }))
-
-    await examSessionApi.gradeSubjectiveAnswers({
-      examSessionId: currentSession.value!.id,
-      grades
+    const sessionGradesMap = new Map<number, { questionId: number; score: number; comment?: string }[]>()
+    batchGradeRows.value.forEach((row) => {
+      const grades = sessionGradesMap.get(row.examSessionId) || []
+      grades.push({
+        questionId: row.questionId,
+        score: row.score,
+        comment: row.comment
+      })
+      sessionGradesMap.set(row.examSessionId, grades)
     })
 
-    ElMessage.success('评分成功')
-    gradeDialogVisible.value = false
-    loadSessions()
+    let successCount = 0
+    let failCount = 0
+    for (const [examSessionId, grades] of sessionGradesMap) {
+      try {
+        await examSessionApi.gradeSubjectiveAnswers({
+          examSessionId,
+          grades
+        })
+        successCount++
+      } catch {
+        failCount++
+      }
+    }
+
+    if (successCount > 0) {
+      ElMessage.success(`批量阅卷完成：成功 ${successCount} 份${failCount > 0 ? `，失败 ${failCount} 份` : ''}`)
+      await loadSessions()
+      if (failCount === 0) {
+        gradeDialogVisible.value = false
+      } else {
+        await loadBatchGradeRows()
+      }
+    } else {
+      ElMessage.error('批量阅卷失败，请重试')
+    }
   } catch (error: unknown) {
     ElMessage.error(getErrorMessage(error, '评分失败'))
   } finally {
     submittingGrades.value = false
+  }
+}
+
+async function handleAutoGrade() {
+  autoGrading.value = true
+  try {
+    const res = await examSessionApi.autoGradeByExam(examId.value)
+    const processed = res.data ?? 0
+    if (processed > 0) {
+      ElMessage.success(`自动阅卷完成，共处理 ${processed} 份答卷`)
+    } else {
+      ElMessage.warning('没有可自动阅卷的已提交答卷')
+    }
+    await loadSessions()
+    if (gradeDialogVisible.value) {
+      await loadBatchGradeRows()
+    }
+  } catch (error: unknown) {
+    ElMessage.error(getErrorMessage(error, '自动阅卷失败'))
+  } finally {
+    autoGrading.value = false
   }
 }
 
@@ -488,6 +587,12 @@ onMounted(() => {
     align-items: center;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
   .section-title {
     margin-top: $spacing-xl;
   }
@@ -495,6 +600,12 @@ onMounted(() => {
   .submit-grades {
     margin-top: $spacing-xl;
     text-align: right;
+  }
+
+  .score-max {
+    margin-left: $spacing-xs;
+    color: $text-tertiary;
+    font-size: $font-size-sm;
   }
 
   .score-main {

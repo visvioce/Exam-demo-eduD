@@ -12,30 +12,34 @@
     <el-card class="search-card">
       <el-form :model="searchForm" label-width="80px">
         <el-form-item label="关键字">
-          <el-input v-model="searchForm.keyword" placeholder="公告标题" clearable @input="handleKeywordInput" style="width: 200px;" />
+          <el-input v-model="searchForm.keyword" placeholder="公告标题" clearable @input="handleKeywordInput" class="search-control" />
         </el-form-item>
         <el-form-item label="类型">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in typeOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.type === item.value }]"
+              :aria-pressed="searchForm.type === item.value"
               @click="filterTypeChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item label="状态">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in statusOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.status === item.value }]"
+              :aria-pressed="searchForm.status === item.value"
               @click="filterStatusChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item>
@@ -46,39 +50,39 @@
 
     <!-- 公告列表 -->
     <el-card class="table-card">
-      <el-table :data="announcements" v-loading="loading" stripe>
+      <el-table :data="announcements" v-loading="loading" stripe table-layout="auto" :fit="true">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="title" label="标题" min-width="200" />
-        <el-table-column prop="type" label="类型" width="120">
+        <el-table-column prop="type" label="类型" min-width="120">
           <template #default="{ row }">
             <el-tag :type="getTypeColor(row.type)">{{ getTypeName(row.type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="priority" label="优先级" width="100">
+        <el-table-column prop="priority" label="优先级" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getPriorityColor(row.priority)" size="small">
               {{ getPriorityName(row.priority) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === 'PUBLISHED' ? 'success' : 'info'">
               {{ row.status === 'PUBLISHED' ? '已发布' : '草稿' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="发布人" width="120">
+        <el-table-column label="发布人" min-width="120">
           <template #default="{ row }">
             {{ getPublisherDisplayName(row) }}
           </template>
         </el-table-column>
-        <el-table-column prop="publishedAt" label="发布时间" width="180">
+        <el-table-column prop="publishedAt" label="发布时间" min-width="168">
           <template #default="{ row }">
             {{ formatDate(row.publishedAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="120">
+        <el-table-column label="操作" min-width="120">
           <template #default="{ row }">
             <ActionButtons
               @view="handleView(row)"
@@ -172,15 +176,14 @@ import { Plus } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/format'
 import { getErrorMessage } from '@/utils/error'
 import { sanitizeHtml } from '@/utils/sanitize'
+import { usePagedList } from '@/composables/usePagedList'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Announcement } from '@/types'
 import ActionButtons from '@/components/ActionButtons.vue'
 
 const authStore = useAuthStore()
 
-const loading = ref(false)
 const submitting = ref(false)
-const announcements = ref<Announcement[]>([])
 const viewDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const isEdit = ref(false)
@@ -200,16 +203,37 @@ const statusOptions = [
   { label: '已发布', value: 'PUBLISHED' }
 ]
 
-const searchForm = reactive({
-  keyword: '',
-  type: '',
-  status: ''
-})
-
-const pagination = reactive({
-  current: 1,
-  size: 10,
-  total: 0
+const {
+  records: announcements,
+  loading,
+  searchForm,
+  pagination,
+  load: loadAnnouncements,
+  loadFromFirstPage,
+  resetSearch,
+  toggleSearch
+} = usePagedList<Announcement, { keyword: string; type: string; status: string }>({
+  createSearchForm: () => ({
+    keyword: '',
+    type: '',
+    status: ''
+  }),
+  fetchPage: async ({ current, size, keyword, status, type }) => {
+    const res = await announcementApi.page({
+      current,
+      size,
+      keyword: keyword || undefined,
+      status: status || undefined,
+      type: type || undefined
+    })
+    return {
+      records: res.data.records,
+      total: res.data.total
+    }
+  },
+  onError: () => {
+    ElMessage.error('加载公告失败')
+  }
 })
 
 const announcementForm = reactive({
@@ -287,48 +311,20 @@ function getPublisherDisplayName(announcement: Announcement | null): string {
   return '-'
 }
 
-async function loadAnnouncements() {
-  loading.value = true
-  try {
-    const res = await announcementApi.page({
-      current: pagination.current,
-      size: pagination.size,
-      keyword: searchForm.keyword || undefined,
-      status: searchForm.status || undefined,
-      type: searchForm.type || undefined
-    })
-    announcements.value = res.data.records
-    pagination.total = res.data.total
-  } catch (error) {
-    ElMessage.error('加载公告失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 function handleKeywordInput() {
-  pagination.current = 1
-  loadAnnouncements()
+  void loadFromFirstPage()
 }
 
 function filterTypeChange(value: string) {
-  searchForm.type = searchForm.type === value ? '' : value
-  pagination.current = 1
-  loadAnnouncements()
+  void toggleSearch('type', value, '')
 }
 
 function filterStatusChange(value: string) {
-  searchForm.status = searchForm.status === value ? '' : value
-  pagination.current = 1
-  loadAnnouncements()
+  void toggleSearch('status', value, '')
 }
 
 function handleReset() {
-  searchForm.keyword = ''
-  searchForm.type = ''
-  searchForm.status = ''
-  pagination.current = 1
-  loadAnnouncements()
+  void resetSearch()
 }
 
 function handleView(row: Announcement) {
@@ -371,7 +367,7 @@ async function handleDelete(row: Announcement) {
     })
     await announcementApi.delete(row.id)
     ElMessage.success('删除成功')
-    loadAnnouncements()
+    void loadAnnouncements()
   } catch {
     // 取消删除
   }
@@ -400,7 +396,7 @@ async function handleSubmit() {
           ElMessage.success('发布成功')
         }
         editDialogVisible.value = false
-        loadAnnouncements()
+        void loadAnnouncements()
       } catch (error: unknown) {
         ElMessage.error(getErrorMessage(error, '操作失败'))
       } finally {

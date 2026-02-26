@@ -19,30 +19,34 @@
       <el-form :model="searchForm" label-width="80px">
         <el-form-item label="题目类型">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in typeOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.type === item.value }]"
+              :aria-pressed="searchForm.type === item.value"
               @click="filterTypeChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item label="难度">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in difficultyOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.difficulty === item.value }]"
+              :aria-pressed="searchForm.difficulty === item.value"
               @click="filterDifficultyChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item label="学科">
-          <el-select v-model="searchForm.subject" placeholder="全部学科" clearable @change="handleSubjectChange" style="width: 200px;" allow-create filterable>
+          <el-select v-model="searchForm.subject" placeholder="全部学科" clearable @change="handleSubjectChange" class="search-control" allow-create filterable>
             <el-option v-for="subject in subjects" :key="subject" :label="subject" :value="subject" />
           </el-select>
         </el-form-item>
@@ -54,28 +58,28 @@
 
     <!-- 题目列表 -->
     <el-card class="table-card">
-      <el-table :data="questions" v-loading="loading" stripe>
+      <el-table :data="questions" v-loading="loading" stripe table-layout="auto" :fit="true">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="content" label="题目内容" min-width="300">
           <template #default="{ row }">
             <div class="question-content" v-html="sanitizeAndTruncate(row.content, 100)"></div>
           </template>
         </el-table-column>
-        <el-table-column prop="type" label="类型" width="100">
+        <el-table-column prop="type" label="类型" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getTypeColor(row.type)">{{ getTypeName(row.type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="difficulty" label="难度" width="80">
+        <el-table-column prop="difficulty" label="难度" min-width="88">
           <template #default="{ row }">
             <el-tag :type="getDifficultyColor(row.difficulty)" size="small">
               {{ getDifficultyName(row.difficulty) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="subject" label="学科" width="100" />
-        <el-table-column prop="score" label="分值" width="80" />
-        <el-table-column label="操作" fixed="right" width="120">
+        <el-table-column prop="subject" label="学科" min-width="108" />
+        <el-table-column prop="score" label="分值" min-width="88" />
+        <el-table-column label="操作" min-width="120">
           <template #default="{ row }">
             <ActionButtons
               @view="handleView(row)"
@@ -187,7 +191,7 @@
             <div v-for="(option, index) in questionForm.options" :key="index" class="option-row">
               <el-input v-model="option.id" class="option-id-input" placeholder="A" />
               <el-input v-model="option.text" placeholder="选项内容" class="option-text-input" />
-              <el-button type="danger" @click="removeOption(index)" :icon="Delete" circle size="small" />
+              <DeleteActionButton aria-label="删除选项" @click="removeOption(index)" />
             </div>
             <el-button type="primary" @click="addOption" size="small">添加选项</el-button>
           </div>
@@ -221,7 +225,7 @@
             <div v-for="(criterion, index) in questionForm.scoringCriteria" :key="index" class="criterion-row">
               <el-input v-model="criterion.point" placeholder="评分点" class="criterion-point-input" />
               <el-input-number v-model="criterion.score" :min="0" :max="questionForm.score" placeholder="分值" />
-              <el-button type="danger" @click="removeCriterion(index)" :icon="Delete" circle size="small" />
+              <DeleteActionButton aria-label="删除评分点" @click="removeCriterion(index)" />
             </div>
             <el-button type="primary" @click="addCriterion" size="small">添加评分点</el-button>
           </div>
@@ -368,12 +372,13 @@ import { useAuthStore } from '@/stores/auth'
 import { questionApi } from '@/api/question'
 import { aiApi, type GenerateQuestionRequest, type GeneratedQuestion } from '@/api/ai'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete, MagicStick, Check, Document, Setting } from '@element-plus/icons-vue'
+import { Plus, MagicStick, Check, Document, Setting } from '@element-plus/icons-vue'
 import { getErrorMessage } from '@/utils/error'
 import { sanitizeHtml, sanitizeAndTruncate } from '@/utils/sanitize'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Question, QuestionOption, ScoringCriterion } from '@/types'
 import ActionButtons from '@/components/ActionButtons.vue'
+import DeleteActionButton from '@/components/DeleteActionButton.vue'
 
 const authStore = useAuthStore()
 
@@ -468,9 +473,8 @@ function hasPermission(roles: string[]) {
 }
 
 function canEdit(question: Question) {
-  if (authStore.user?.role === 'ADMIN') return true
-  if (authStore.user?.role === 'TEACHER' && question.teacherId === authStore.user?.id) return true
-  return false
+  const role = authStore.user?.role
+  return (role === 'ADMIN' || role === 'TEACHER') && question.teacherId === authStore.user?.id
 }
 
 function getTypeName(type: string) {
@@ -665,7 +669,21 @@ function addOption() {
 }
 
 function removeOption(index: number) {
+  if (questionForm.options.length <= 2) {
+    ElMessage.warning('至少保留 2 个选项')
+    return
+  }
+  const removedOptionId = questionForm.options[index]?.id
   questionForm.options.splice(index, 1)
+
+  if (questionForm.type === 'MULTIPLE_CHOICE' && Array.isArray(questionForm.correctAnswer)) {
+    questionForm.correctAnswer = questionForm.correctAnswer.filter((id: string) => id !== removedOptionId)
+    return
+  }
+
+  if (typeof questionForm.correctAnswer === 'string' && questionForm.correctAnswer === removedOptionId) {
+    questionForm.correctAnswer = ''
+  }
 }
 
 function addCriterion() {
@@ -1073,30 +1091,24 @@ onMounted(() => {
         }
 
         .save-all-btn {
-          background: #fff;
-          color: #333;
-          border: 2px solid #333;
-          font-weight: 600;
+          background: $bg-primary;
+          color: $text-primary;
+          border: 1px solid $text-primary;
+          font-weight: $font-weight-medium;
           box-shadow: none;
-          transition: all 0.15s ease;
+          transition: all $transition-fast;
 
           &:hover:not(:disabled) {
-            background: #fff;
-            color: #333;
-            border-color: #333;
+            background: $bg-hover;
+            color: $text-primary;
+            border-color: $text-primary;
             box-shadow: none;
-            transform: translate(-1px, -1px);
-          }
-
-          &:active:not(:disabled) {
-            box-shadow: none;
-            transform: translate(2px, 2px);
           }
 
           &:disabled {
-            background: #f5f5f5;
-            color: #ccc;
-            border-color: #ddd;
+            background: $bg-secondary;
+            color: $text-quaternary;
+            border-color: $border-color;
             box-shadow: none;
             cursor: not-allowed;
           }

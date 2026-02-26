@@ -12,18 +12,20 @@
     <el-card class="search-card">
       <el-form :model="searchForm" label-width="80px">
         <el-form-item label="关键字">
-          <el-input v-model="searchForm.keyword" placeholder="用户名/昵称" clearable @input="handleKeywordInput" style="width: 200px;" />
+          <el-input v-model="searchForm.keyword" placeholder="用户名/昵称" clearable @input="handleKeywordInput" class="search-control" />
         </el-form-item>
         <el-form-item label="角色">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in roleOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.role === item.value }]"
+              :aria-pressed="searchForm.role === item.value"
               @click="handleRoleChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item>
@@ -34,7 +36,7 @@
 
     <!-- 用户列表 -->
     <el-card class="table-card">
-      <el-table :data="users" v-loading="loading" stripe>
+      <el-table :data="users" v-loading="loading" stripe table-layout="auto" :fit="true">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="username" label="用户名" min-width="150" show-overflow-tooltip />
         <el-table-column label="昵称" min-width="150" show-overflow-tooltip>
@@ -42,12 +44,12 @@
             {{ row.nickname || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="role" label="角色" width="120">
+        <el-table-column prop="role" label="角色" min-width="120">
           <template #default="{ row }">
             <el-tag :type="getRoleType(row.role)">{{ getRoleName(row.role) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ getUserStatusName(row.status) }}
@@ -59,7 +61,7 @@
             {{ formatDate(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="140">
+        <el-table-column label="操作" min-width="140">
           <template #default="{ row }">
             <ActionButtons
               :show-view="false"
@@ -128,15 +130,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { formatDate, getRoleName, getUserStatusName } from '@/utils/format'
 import { getErrorMessage } from '@/utils/error'
+import { usePagedList } from '@/composables/usePagedList'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { User } from '@/types'
 import ActionButtons from '@/components/ActionButtons.vue'
 
 const authStore = useAuthStore()
 
-const loading = ref(false)
 const submitting = ref(false)
-const users = ref<User[]>([])
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const userFormRef = ref<FormInstance>()
@@ -151,15 +152,35 @@ const roleOptions = [
   { label: '学生', value: 'STUDENT' }
 ]
 
-const searchForm = reactive({
-  keyword: '',
-  role: ''
-})
-
-const pagination = reactive({
-  current: 1,
-  size: 10,
-  total: 0
+const {
+  records: users,
+  loading,
+  searchForm,
+  pagination,
+  load: loadUsers,
+  loadFromFirstPage,
+  resetSearch,
+  toggleSearch
+} = usePagedList<User, { keyword: string; role: string }>({
+  createSearchForm: () => ({
+    keyword: '',
+    role: ''
+  }),
+  fetchPage: async ({ current, size, keyword, role }) => {
+    const res = await userApi.page({
+      current,
+      size,
+      keyword: keyword || undefined,
+      role: role || undefined
+    })
+    return {
+      records: res.data.records,
+      total: res.data.total
+    }
+  },
+  onError: () => {
+    ElMessage.error('加载用户失败')
+  }
 })
 
 const userForm = reactive({
@@ -209,40 +230,16 @@ function getStatusType(status: string) {
   return map[status] || 'info'
 }
 
-async function loadUsers() {
-  loading.value = true
-  try {
-    const res = await userApi.page({
-      current: pagination.current,
-      size: pagination.size,
-      keyword: searchForm.keyword || undefined,
-      role: searchForm.role || undefined
-    })
-    users.value = res.data.records
-    pagination.total = res.data.total
-  } catch (error) {
-    ElMessage.error('加载用户失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 function handleKeywordInput() {
-  pagination.current = 1
-  loadUsers()
+  void loadFromFirstPage()
 }
 
 function handleRoleChange(value: string) {
-  searchForm.role = searchForm.role === value ? '' : value
-  pagination.current = 1
-  loadUsers()
+  void toggleSearch('role', value, '')
 }
 
 function handleReset() {
-  searchForm.keyword = ''
-  searchForm.role = ''
-  pagination.current = 1
-  loadUsers()
+  void resetSearch()
 }
 
 function handleCreate() {
@@ -279,7 +276,7 @@ async function handleDelete(row: User) {
     })
     await userApi.delete(row.id)
     ElMessage.success('删除成功')
-    loadUsers()
+    void loadUsers()
   } catch {
     // 取消删除
   }
@@ -310,7 +307,7 @@ async function handleSubmit() {
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
-        loadUsers()
+        void loadUsers()
       } catch (error: unknown) {
         ElMessage.error(getErrorMessage(error, '操作失败'))
       } finally {

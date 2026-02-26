@@ -54,13 +54,7 @@ public class CourseController {
     @Operation(summary = "获取全部课程", description = "不建议使用，数据量大时会有性能问题")
     public Result<List<Course>> list(HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String userRole = SecurityUtil.getCurrentUserRole(request);
-
-        if (!RoleEnum.ADMIN.getCode().equals(userRole)) {
-            // 非管理员只能查看自己的课程
-            return Result.success(courseService.getByTeacherId(userId));
-        }
-        return Result.success(courseService.listWithTeacherNames());
+        return Result.success(courseService.getByTeacherId(userId));
     }
 
     /**
@@ -88,14 +82,11 @@ public class CourseController {
         }
 
         // 数据隔离检查：
-        // ADMIN 可查看所有；TEACHER 仅可查看自己课程；STUDENT 仅可查看已加入课程
+        // ADMIN/TEACHER 仅可查看自己课程；STUDENT 可预览课程基础信息
         Long userId = SecurityUtil.getCurrentUserId(request);
         String userRole = SecurityUtil.getCurrentUserRole(request);
-        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
-            return Result.success(course);
-        }
 
-        if (RoleEnum.TEACHER.getCode().equals(userRole)) {
+        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
             if (!course.getTeacherId().equals(userId)) {
                 throw new com.southcollege.exam.exception.BusinessException("无权查看该课程");
             }
@@ -103,9 +94,6 @@ public class CourseController {
         }
 
         if (RoleEnum.STUDENT.getCode().equals(userRole)) {
-            if (!courseService.isCourseMember(id, userId)) {
-                throw new com.southcollege.exam.exception.BusinessException("请先加入该课程");
-            }
             return Result.success(course);
         }
 
@@ -193,13 +181,12 @@ public class CourseController {
     @GetMapping("/{id}/members")
     public Result<List<User>> getCourseMembers(@PathVariable Long id, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
-        String role = SecurityUtil.getCurrentUserRole(request);
         // 只有课程教师和成员可以查看成员列表
         Course course = courseService.getById(id);
         if (course == null) {
             return Result.error("课程不存在");
         }
-        if (RoleEnum.ADMIN.getCode().equals(role) || course.getTeacherId().equals(userId)) {
+        if (course.getTeacherId().equals(userId)) {
             return Result.success(courseService.getCourseMembers(id));
         }
         // 检查是否是课程成员

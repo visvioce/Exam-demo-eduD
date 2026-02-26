@@ -25,6 +25,11 @@ public class JwtInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // CORS 预检请求不做鉴权，由后续过滤器返回跨域响应头
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         // 从请求头中获取Authorization
         String token = request.getHeader("Authorization");
         

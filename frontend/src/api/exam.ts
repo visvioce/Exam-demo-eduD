@@ -138,24 +138,17 @@ export const examSessionApi = {
     return request.get<ExamSession[]>("/exam-sessions/my");
   },
 
-  // 获取待评分的考试记录
-  getPendingGrading() {
-    return request.get<ExamSession[]>("/exam-sessions/pending-grading");
-  },
-
-  // 获取某考试待评分的记录
-  getPendingGradingByExamId(examId: number) {
-    return request.get<ExamSession[]>(
-      `/exam-sessions/pending-grading/exam/${examId}`,
-    );
-  },
-
   // 主观题评分
   gradeSubjectiveAnswers(data: {
     examSessionId: number;
     grades: { questionId: number; score: number; comment?: string }[];
   }) {
     return request.post("/exam-sessions/grade", data);
+  },
+
+  // 按考试批量自动阅卷（客观题重评）
+  autoGradeByExam(examId: number) {
+    return request.post<number>(`/exam-sessions/exam/${examId}/auto-grade`);
   },
 
   // 获取考试结果详情

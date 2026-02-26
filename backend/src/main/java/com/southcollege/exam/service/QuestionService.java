@@ -8,7 +8,6 @@ import com.southcollege.exam.dto.request.PageRequest;
 import com.southcollege.exam.dto.response.PageResult;
 import com.southcollege.exam.entity.Paper;
 import com.southcollege.exam.entity.Question;
-import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.exception.BusinessException;
 import com.southcollege.exam.mapper.QuestionMapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
@@ -42,20 +41,11 @@ public class QuestionService extends ServiceImpl<QuestionMapper, Question> {
         Page<Question> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
         LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<>();
 
-        // 数据隔离：教师只能查看自己创建的题目，管理员可以查看所有
-        if (!RoleEnum.ADMIN.getCode().equals(currentUserRole)) {
-            // 非管理员只能看自己的题目（如果前端传了teacherId，必须等于自己的ID，否则忽略）
-            if (teacherId != null && !teacherId.equals(currentUserId)) {
-                // 教师尝试查询其他教师的数据，返回空结果
-                return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
-            }
-            wrapper.eq(Question::getTeacherId, currentUserId);
-        } else {
-            // 管理员可以筛选教师
-            if (teacherId != null) {
-                wrapper.eq(Question::getTeacherId, teacherId);
-            }
+        // 数据隔离：管理员与教师都只能查看自己的题目
+        if (teacherId != null && !teacherId.equals(currentUserId)) {
+            return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
         }
+        wrapper.eq(Question::getTeacherId, currentUserId);
 
         // 题型筛选
         if (StringUtils.isNotBlank(type)) {
@@ -125,7 +115,7 @@ public class QuestionService extends ServiceImpl<QuestionMapper, Question> {
         if (question == null) {
             throw new BusinessException("题目不存在");
         }
-        if (!RoleEnum.ADMIN.getCode().equals(userRole) && !question.getTeacherId().equals(userId)) {
+        if (!question.getTeacherId().equals(userId)) {
             throw new BusinessException("无权操作该题目");
         }
     }

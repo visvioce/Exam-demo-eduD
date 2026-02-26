@@ -22,6 +22,11 @@ public class RoleInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // CORS 预检请求不校验角色
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         // 如果不是方法处理器，直接放行
         if (!(handler instanceof HandlerMethod)) {
             return true;

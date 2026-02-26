@@ -125,6 +125,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { examApi, examSessionApi } from '@/api/exam'
+import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
 import { Check, Loading } from '@element-plus/icons-vue'
 import { sanitizeHtml } from '@/utils/sanitize'
@@ -133,6 +134,7 @@ import type { Exam, Question, ExamSession } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -144,13 +146,15 @@ const questionScores = ref<number[]>([])
 type AnswerValue = string | string[]
 const answers = ref<AnswerValue[]>([])
 const session = ref<ExamSession | null>(null)
+const hasServerAnswers = ref(false)
 
 // 自动保存相关
 const autoSaveInterval = ref<ReturnType<typeof setInterval> | null>(null)
 const lastSaveTime = ref<Date | null>(null)
 const isSaving = ref(false)
 const AUTO_SAVE_INTERVAL = 30000 // 30秒自动保存一次
-const LOCAL_STORAGE_KEY = computed(() => `exam_answers_${examId.value}`)
+const currentUserId = computed(() => authStore.user?.id ?? 'anonymous')
+const LOCAL_STORAGE_KEY = computed(() => `exam_answers_${currentUserId.value}_${examId.value}`)
 
 const examId = computed(() => Number(route.params.id))
 const sessionId = computed(() => route.query.sessionId as string)
@@ -235,6 +239,7 @@ function scrollToQuestion(index: number) {
 
 async function loadExam(): Promise<void> {
   loading.value = true
+  hasServerAnswers.value = false
   try {
     // 加载考试信息
     const examRes = await examApi.getById(examId.value)
@@ -286,6 +291,7 @@ async function loadExam(): Promise<void> {
               }
             }
           })
+          hasServerAnswers.value = true
         }
       } catch (questionsError: unknown) {
         ElMessage.error(getErrorMessage(questionsError, '加载题目失败'))
@@ -314,7 +320,7 @@ async function loadExam(): Promise<void> {
 
 function handleTimeUp() {
   ElMessage.warning('考试时间已到，系统将自动提交试卷')
-  confirmSubmit()
+  void confirmSubmit()
 }
 
 // 构建答案数据
@@ -398,8 +404,10 @@ async function autoSaveAnswers() {
 
 // 启动自动保存
 function startAutoSave() {
-  // 先尝试从本地恢复
-  restoreFromLocal()
+  // 无服务端缓存时再从本地恢复，避免覆盖服务端已保存答案
+  if (!hasServerAnswers.value) {
+    restoreFromLocal()
+  }
 
   // 启动定时自动保存
   autoSaveInterval.value = setInterval(() => {
@@ -434,6 +442,8 @@ async function handleSubmit() {
 }
 
 async function confirmSubmit() {
+  if (submitting.value) return
+
   confirmDialogVisible.value = false
   submitting.value = true
 

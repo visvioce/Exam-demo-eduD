@@ -23,6 +23,8 @@ public class Course {
 
     private String description;
 
+    private String coverUrl;
+
     private Long teacherId;
 
     @TableField(exist = false)

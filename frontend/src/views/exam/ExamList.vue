@@ -12,20 +12,22 @@
     <el-card class="search-card">
       <el-form :model="searchForm" label-width="80px">
         <el-form-item label="课程">
-          <el-select v-model="searchForm.courseId" placeholder="全部" clearable @change="handleCourseChange" style="width: 200px;">
+          <el-select v-model="searchForm.courseId" placeholder="全部" clearable @change="handleCourseChange" class="search-control">
             <el-option v-for="course in courses" :key="course.id" :label="course.name" :value="course.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <div class="filter-tabs">
-            <span 
+            <button
+              type="button"
               v-for="item in (isStudent ? studentStatusOptions : statusOptions)" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.status === item.value }]"
+              :aria-pressed="searchForm.status === item.value"
               @click="handleStatusChange(item.value)"
             >
               {{ item.label }}
-            </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item>
@@ -40,34 +42,37 @@
         <template #header>
           <span>我的考试</span>
         </template>
-        <el-table :data="filteredMyExams" v-loading="loading" stripe>
+        <el-table :data="filteredMyExams" v-loading="loading" stripe table-layout="auto" :fit="true">
           <el-table-column prop="title" label="考试名称" min-width="200" />
-          <el-table-column prop="courseName" label="课程" width="120" />
-          <el-table-column prop="startedAt" label="开始时间" width="180">
+          <el-table-column prop="courseName" label="课程" min-width="120" />
+          <el-table-column prop="startedAt" label="开始时间" min-width="168">
             <template #default="{ row }">
               {{ formatDate(row.startedAt) }}
             </template>
           </el-table-column>
-          <el-table-column prop="endedAt" label="结束时间" width="180">
+          <el-table-column prop="endedAt" label="结束时间" min-width="168">
             <template #default="{ row }">
               {{ formatDate(row.endedAt) }}
             </template>
           </el-table-column>
-          <el-table-column prop="duration" label="时长(分钟)" width="100" />
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="duration" label="时长(分钟)" min-width="108" />
+          <el-table-column prop="status" label="状态" min-width="100">
             <template #default="{ row }">
               <el-tag :type="getStatusColor(row.status)">{{ getStatusName(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" fixed="right" width="180">
+          <el-table-column label="操作" min-width="180">
             <template #default="{ row }">
               <el-button size="small" type="primary" @click="handleTakeExam(row)"
                 :disabled="!canTakeExam(row)">
                 {{ getExamActionText(row) }}
               </el-button>
-              <el-button v-if="canViewResult(row)" size="small" @click="handleViewResult(row)">
-                <el-icon><View /></el-icon>
-              </el-button>
+              <ActionButtons
+                v-if="canViewResult(row)"
+                :show-edit="false"
+                :show-delete="false"
+                @view="handleViewResult(row)"
+              />
             </template>
           </el-table-column>
         </el-table>
@@ -77,38 +82,42 @@
     <!-- 教师/管理员视图：考试列表 -->
     <template v-else>
       <el-card class="table-card">
-        <el-table :data="exams" v-loading="loading" stripe>
+        <el-table :data="exams" v-loading="loading" stripe table-layout="auto" :fit="true">
           <el-table-column prop="id" label="ID" width="80" />
           <el-table-column prop="title" label="考试名称" min-width="200" />
-          <el-table-column prop="courseName" label="课程" width="120" />
-          <el-table-column prop="startedAt" label="开始时间" width="180">
+          <el-table-column prop="courseName" label="课程" min-width="120" />
+          <el-table-column prop="startedAt" label="开始时间" min-width="168">
             <template #default="{ row }">
               {{ formatDate(row.startedAt) }}
             </template>
           </el-table-column>
-          <el-table-column prop="endedAt" label="结束时间" width="180">
+          <el-table-column prop="endedAt" label="结束时间" min-width="168">
             <template #default="{ row }">
               {{ formatDate(row.endedAt) }}
             </template>
           </el-table-column>
-          <el-table-column prop="duration" label="时长(分钟)" width="100" />
-          <el-table-column prop="totalScore" label="总分" width="80" />
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="duration" label="时长(分钟)" min-width="108" />
+          <el-table-column prop="totalScore" label="总分" min-width="88" />
+          <el-table-column prop="status" label="状态" min-width="100">
             <template #default="{ row }">
               <el-tag :type="getStatusColor(row.status)">{{ getStatusName(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" fixed="right" width="280">
+          <el-table-column label="操作" min-width="240">
             <template #default="{ row }">
-              <el-button size="small" @click="handleView(row)">详情</el-button>
-              <el-button size="small" type="primary" @click="handleEdit(row)" 
-                v-if="canEdit(row) && row.status === 'DRAFT'">编辑</el-button>
-              <el-button size="small" type="success" @click="handlePublish(row)" 
-                v-if="canEdit(row) && row.status === 'DRAFT'">发布</el-button>
-              <el-button size="small" type="warning" @click="handleCancel(row)" 
-                v-if="canEdit(row) && ['PUBLISHED', 'STARTED'].includes(row.status)">取消</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(row)" 
-                v-if="canEdit(row) && row.status === 'DRAFT'">删除</el-button>
+              <div class="table-actions">
+                <ActionButtons
+                  :show-edit="canEdit(row) && (!row.status || row.status === 'DRAFT')"
+                  :show-delete="canEdit(row) && (!row.status || row.status === 'DRAFT')"
+                  @view="handleView(row)"
+                  @edit="handleEdit(row)"
+                  @delete="handleDelete(row)"
+                />
+                <el-button size="small" type="success" @click="handlePublish(row)" 
+                  v-if="canEdit(row) && (!row.status || row.status === 'DRAFT')">发布</el-button>
+                <el-button size="small" type="warning" @click="handleCancel(row)" 
+                  v-if="canEdit(row) && ['PUBLISHED', 'STARTED'].includes(row.status)">取消</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -208,18 +217,18 @@ import { examApi } from '@/api/exam'
 import { courseApi } from '@/api/course'
 import { paperApi } from '@/api/paper'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, View } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import { getStatusName, getStatusColor, formatDate } from '@/utils/format'
 import { getErrorMessage } from '@/utils/error'
+import { usePagedList } from '@/composables/usePagedList'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Exam, Course, Paper } from '@/types'
+import ActionButtons from '@/components/ActionButtons.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const loading = ref(false)
 const submitting = ref(false)
-const exams = ref<Exam[]>([])
 const myExams = ref<Exam[]>([])
 const courses = ref<Course[]>([])
 const papers = ref<Paper[]>([])
@@ -247,16 +256,40 @@ const studentStatusOptions = [
   { label: '已取消', value: 'CANCELLED' }
 ]
 
-const searchForm = reactive({
-  courseId: null as number | null,
-  status: ''
+const isStudent = computed(() => authStore.user?.role === 'STUDENT')
+const myExamsLoading = ref(false)
+
+const {
+  records: exams,
+  loading: teacherLoading,
+  searchForm,
+  pagination,
+  load: loadTeacherExams,
+  loadFromFirstPage,
+  resetSearch
+} = usePagedList<Exam, { courseId: number | null; status: string }>({
+  createSearchForm: () => ({
+    courseId: null,
+    status: ''
+  }),
+  fetchPage: async ({ current, size, courseId, status }) => {
+    const res = await examApi.page({
+      current,
+      size,
+      courseId: courseId || undefined,
+      status: status || undefined
+    })
+    return {
+      records: res.data.records,
+      total: res.data.total
+    }
+  },
+  onError: () => {
+    ElMessage.error('加载考试失败')
+  }
 })
 
-const pagination = reactive({
-  current: 1,
-  size: 10,
-  total: 0
-})
+const loading = computed(() => (isStudent.value ? myExamsLoading.value : teacherLoading.value))
 
 const examForm = reactive({
   id: 0,
@@ -281,8 +314,6 @@ const rules = reactive<FormRules>({
   passScore: [{ required: true, message: '请输入及格分数', trigger: 'blur' }]
 })
 
-const isStudent = computed(() => authStore.user?.role === 'STUDENT')
-
 // 学生视图：筛选后的考试列表
 const filteredMyExams = computed(() => {
   let result = [...myExams.value]
@@ -305,9 +336,8 @@ function hasPermission(roles: string[]) {
 }
 
 function canEdit(exam: Exam) {
-  if (authStore.user?.role === 'ADMIN') return true
-  if (authStore.user?.role === 'TEACHER' && exam.teacherId === authStore.user?.id) return true
-  return false
+  const role = authStore.user?.role
+  return (role === 'ADMIN' || role === 'TEACHER') && exam.teacherId === authStore.user?.id
 }
 
 function canTakeExam(exam: Exam) {
@@ -352,26 +382,20 @@ function handleViewResult(exam: Exam) {
 }
 
 async function loadExams() {
-  loading.value = true
-  try {
-    if (isStudent.value) {
+  if (isStudent.value) {
+    myExamsLoading.value = true
+    try {
       const res = await examApi.getMyExams()
       myExams.value = res.data
-    } else {
-      const res = await examApi.page({
-        current: pagination.current,
-        size: pagination.size,
-        courseId: searchForm.courseId || undefined,
-        status: searchForm.status || undefined
-      })
-      exams.value = res.data.records
-      pagination.total = res.data.total
+    } catch (error) {
+      ElMessage.error('加载考试失败')
+    } finally {
+      myExamsLoading.value = false
     }
-  } catch (error) {
-    ElMessage.error('加载考试失败')
-  } finally {
-    loading.value = false
+    return
   }
+
+  await loadTeacherExams()
 }
 
 async function loadCourses() {
@@ -384,7 +408,10 @@ async function loadCourses() {
       // 学生查看已加入的课程（用于筛选）
       res = await courseApi.getMyCourses()
     }
-    courses.value = res.data
+    courses.value = res.data || []
+    if (searchForm.courseId && !courses.value.some((course) => course.id === searchForm.courseId)) {
+      searchForm.courseId = null
+    }
   } catch (error) {
     ElMessage.error('加载课程失败')
   }
@@ -406,25 +433,23 @@ function handleCourseChange(value: number | null) {
   void value
   // 学生视图使用前端筛选，不需要重新加载数据
   if (isStudent.value) return
-  pagination.current = 1
-  loadExams()
+  void loadFromFirstPage()
 }
 
 function handleStatusChange(value: string) {
   searchForm.status = searchForm.status === value ? '' : value
   // 学生视图使用前端筛选，不需要重新加载数据
   if (isStudent.value) return
-  pagination.current = 1
-  loadExams()
+  void loadFromFirstPage()
 }
 
 function handleReset() {
-  searchForm.courseId = null
-  searchForm.status = ''
-  // 学生视图只需要重置筛选条件，不需要重新加载
-  if (isStudent.value) return
-  pagination.current = 1
-  loadExams()
+  if (isStudent.value) {
+    searchForm.courseId = null
+    searchForm.status = ''
+    return
+  }
+  void resetSearch()
 }
 
 function handleView(row: Exam) {
@@ -475,7 +500,7 @@ async function handlePublish(row: Exam) {
     })
     await examApi.publish(row.id)
     ElMessage.success('发布成功')
-    loadExams()
+    void loadExams()
   } catch {
     // 取消
   }
@@ -490,7 +515,7 @@ async function handleCancel(row: Exam) {
     })
     await examApi.cancel(row.id)
     ElMessage.success('取消成功')
-    loadExams()
+    void loadExams()
   } catch {
     // 取消
   }
@@ -505,7 +530,7 @@ async function handleDelete(row: Exam) {
     })
     await examApi.delete(row.id)
     ElMessage.success('删除成功')
-    loadExams()
+    void loadExams()
   } catch {
     // 取消
   }
@@ -551,10 +576,10 @@ async function handleSubmit() {
           ElMessage.success('更新成功')
         } else {
           await examApi.create(data)
-          ElMessage.success('创建成功')
+          ElMessage.success('创建成功，请在列表点击“发布”后学生才可见')
         }
         editDialogVisible.value = false
-        loadExams()
+        void loadExams()
       } catch (error: unknown) {
         ElMessage.error(getErrorMessage(error, '操作失败'))
       } finally {
@@ -565,7 +590,7 @@ async function handleSubmit() {
 }
 
 onMounted(() => {
-  loadExams()
+  void loadExams()
   loadCourses()
   loadPapers()
 })
@@ -587,6 +612,13 @@ onMounted(() => {
   .results-action {
     margin-top: $spacing-xl;
     text-align: right;
+  }
+
+  .table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
   }
 
 }

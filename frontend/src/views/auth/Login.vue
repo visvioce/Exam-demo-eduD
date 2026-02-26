@@ -1,45 +1,17 @@
 <template>
   <div class="login-container">
-    <!-- 左侧黑色动态区域 -->
     <div class="login-left">
-      <!-- 星空粒子 -->
-      <div class="particles">
-        <div 
-          v-for="i in 8" 
-          :key="i" 
-          class="particle"
-          :style="{ 
-            '--delay': (i * 0.3) + 's',
-            '--x': ((i * 13) % 80 + 10) + '%',
-            '--y': ((i * 17) % 70 + 15) + '%'
-          }"
-        ></div>
-      </div>
-      
       <div class="left-content">
+        <p class="auth-kicker">South College</p>
         <h1 class="brand-title">南方学院</h1>
         <p class="brand-subtitle">在线考试系统</p>
 
-        <!-- 名人名言展示 -->
         <div class="quote-container">
-          <transition :name="'quote-' + transitionType" mode="out-in">
+          <transition name="quote-fade" mode="out-in">
             <div :key="currentQuoteIndex" class="quote-box">
-              <p class="quote-text">
-                <span 
-                  v-for="(char, index) in quotes[currentQuoteIndex]!.text" 
-                  :key="index" 
-                  class="char"
-                  :style="{ '--i': index }"
-                >{{ char }}</span>
-              </p>
+              <p class="quote-text">“{{ quotes[currentQuoteIndex]!.text }}”</p>
               <p class="quote-author">
-                <span class="dash">—— </span>
-                <span 
-                  v-for="(char, index) in quotes[currentQuoteIndex]!.author" 
-                  :key="'a'+index" 
-                  class="char author-char"
-                  :style="{ '--i': quotes[currentQuoteIndex]!.text.length + index }"
-                >{{ char }}</span>
+                —— {{ quotes[currentQuoteIndex]!.author }}
               </p>
             </div>
           </transition>
@@ -153,11 +125,9 @@ const quotes = [
 ]
 
 const currentQuoteIndex = ref(0)
-const transitionType = ref(0)
 let quoteTimer: ReturnType<typeof setInterval> | null = null
 
 function nextQuote() {
-  transitionType.value = (transitionType.value + 1) % 4
   currentQuoteIndex.value = (currentQuoteIndex.value + 1) % quotes.length
 }
 
@@ -192,151 +162,95 @@ async function handleLogin() {
 @use '@/styles/views/auth-form-shared.scss';
 
 .login-left {
-  flex: 0 0 45%;
+  flex: 0 0 44%;
   background: $black;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+  color: #ffffff;
 
-  .particles {
+  &::before {
+    content: '';
     position: absolute;
     inset: 0;
-    z-index: 1;
-
-    .particle {
-      position: absolute;
-      width: 2px;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 50%;
-      left: var(--x);
-      top: var(--y);
-      animation: twinkle 3s ease-in-out infinite;
-      animation-delay: var(--delay);
-    }
-  }
-
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.2; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.5); }
+    background:
+      radial-gradient(circle at 18% 24%, rgba(255, 255, 255, 0.12), transparent 42%),
+      radial-gradient(circle at 88% 78%, rgba(255, 255, 255, 0.08), transparent 36%);
+    opacity: 0.7;
   }
 
   .left-content {
     position: relative;
-    z-index: 2;
-    text-align: center;
-    color: #ffffff;
+    z-index: 1;
+    max-width: 460px;
+
+    .auth-kicker {
+      margin: 0 0 $spacing-lg;
+      font-size: $font-size-sm;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.68);
+    }
 
     .brand-title {
-      font-size: 56px;
-      font-weight: 700;
-      margin: 0 0 16px 0;
-      letter-spacing: 4px;
-      line-height: 1.2;
-      animation: breathe 4s ease-in-out infinite;
+      margin: 0 0 $spacing-md;
+      font-size: clamp(36px, 4.8vw, 52px);
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+      font-weight: 650;
     }
 
     .brand-subtitle {
-      font-size: 20px;
-      margin: 0 0 60px 0;
-      opacity: 0.8;
-      letter-spacing: 2px;
-      font-weight: 300;
-      animation: breathe 4s ease-in-out infinite;
-      animation-delay: -1s;
-    }
-  }
-
-  @keyframes breathe {
-    0%, 100% { 
-      opacity: 1; 
-      transform: translateY(0);
-      text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-    }
-    50% { 
-      opacity: 0.85; 
-      transform: translateY(-5px);
-      text-shadow: 0 0 50px rgba(255, 255, 255, 0.5);
+      margin: 0;
+      font-size: $font-size-lg;
+      color: rgba(255, 255, 255, 0.74);
     }
   }
 
   .quote-container {
-    min-height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin-top: $spacing-3xl;
+    padding-top: $spacing-xl;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    min-height: 132px;
 
     .quote-box {
-      text-align: center;
-      padding: 24px 32px;
-      max-width: 420px;
+      display: grid;
+      gap: $spacing-md;
 
       .quote-text {
-        font-size: 22px;
-        font-weight: 400;
-        line-height: 2;
-        margin: 0 0 20px 0;
-        color: rgba(255, 255, 255, 0.95);
-        letter-spacing: 2px;
-
-        .char {
-          display: inline-block;
-          animation: char-bounce 2.5s ease-in-out infinite;
-          animation-delay: calc(var(--i) * 0.05s);
-        }
+        margin: 0;
+        font-size: clamp(18px, 2vw, 22px);
+        line-height: 1.75;
+        color: rgba(255, 255, 255, 0.96);
+        letter-spacing: 0.01em;
       }
 
       .quote-author {
-        font-size: 14px;
         margin: 0;
-        color: rgba(255, 255, 255, 0.5);
-
-        .dash, .author-char {
-          display: inline-block;
-          animation: char-bounce 2.5s ease-in-out infinite;
-        }
+        font-size: $font-size-sm;
+        color: rgba(255, 255, 255, 0.62);
       }
     }
   }
+}
 
-  @keyframes char-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
+.quote-fade-enter-active,
+.quote-fade-leave-active {
+  transition: opacity 0.35s ease;
+}
 
-  // 切换动画 - 简化合并
-  .quote-0-enter-active, .quote-1-enter-active,
-  .quote-2-enter-active, .quote-3-enter-active {
-    animation: quote-in 1.5s cubic-bezier(0.2, 0, 0.2, 1) forwards;
-  }
-  .quote-0-leave-active, .quote-1-leave-active,
-  .quote-2-leave-active, .quote-3-leave-active {
-    animation: quote-out 1.2s cubic-bezier(0.2, 0, 0.2, 1) forwards;
-  }
-
-  @keyframes quote-in { 0% { opacity: 0; } 100% { opacity: 1; } }
-  @keyframes quote-out { 0% { opacity: 1; } 100% { opacity: 0; } }
-
-  .quote-1-enter-active { animation-name: slide-up-in; }
-  .quote-1-leave-active { animation-name: slide-up-out; }
-  @keyframes slide-up-in { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
-  @keyframes slide-up-out { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
-
-  .quote-2-enter-active { animation-name: scale-in; }
-  .quote-2-leave-active { animation-name: scale-out; }
-  @keyframes scale-in { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-  @keyframes scale-out { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
-
-  .quote-3-enter-active { animation-name: blur-in; }
-  .quote-3-leave-active { animation-name: blur-out; }
-  @keyframes blur-in { 0% { opacity: 0; filter: blur(20px); transform: scale(1.1); } 100% { opacity: 1; filter: blur(0); transform: scale(1); } }
-  @keyframes blur-out { 0% { opacity: 1; filter: blur(0); transform: scale(1); } 100% { opacity: 0; filter: blur(20px); transform: scale(0.9); } }
+.quote-fade-enter-from,
+.quote-fade-leave-to {
+  opacity: 0;
 }
 
 .login-content {
-  max-width: 400px;
+  max-width: 420px;
+}
+
+@media (max-width: 1024px) {
+  .login-left {
+    .left-content {
+      max-width: 600px;
+    }
+  }
 }
 
 </style>

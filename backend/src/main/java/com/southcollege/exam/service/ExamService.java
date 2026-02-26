@@ -43,11 +43,11 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
     private static final List<String> OBJECTIVE_TYPES = List.of(
             QuestionTypeEnum.SINGLE_CHOICE.getCode(),
             QuestionTypeEnum.MULTIPLE_CHOICE.getCode(),
-            QuestionTypeEnum.TRUE_FALSE.getCode()
+            QuestionTypeEnum.TRUE_FALSE.getCode(),
+            QuestionTypeEnum.FILL_BLANK.getCode()
     );
     // 主观题类型
     private static final List<String> SUBJECTIVE_TYPES = List.of(
-            QuestionTypeEnum.FILL_BLANK.getCode(),
             QuestionTypeEnum.ESSAY.getCode()
     );
 
@@ -142,6 +142,29 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
             throw new BusinessException("考试未发布");
         }
 
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(exam.getStartedAt())) {
+            throw new BusinessException("考试未开始");
+        }
+        if (now.isAfter(exam.getEndedAt().plusSeconds(30))) {
+            throw new BusinessException("考试已结束");
+        }
+
+        // 题目仅对已有进行中会话的学生开放，避免提前获取试题内容
+        ExamSession session = examSessionService.getByExamIdAndStudentId(examId, studentId);
+        if (session == null) {
+            throw new BusinessException("未开始该考试");
+        }
+        if (!ExamSessionStatusEnum.IN_PROGRESS.getCode().equals(session.getStatus())) {
+            throw new BusinessException("当前考试状态不允许继续作答");
+        }
+        if (exam.getDuration() != null) {
+            LocalDateTime durationDeadline = sessionDeadline(session, exam.getDuration());
+            if (now.isAfter(durationDeadline)) {
+                throw new BusinessException("考试已超时");
+            }
+        }
+
         // 获取试卷
         Paper paper = paperService.getById(exam.getPaperId());
         if (paper == null || paper.getQuestions() == null) {
@@ -164,8 +187,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 获取考试的试卷信息（查看考试回顾时使用）
      * 包含题目和正确答案
      * 学生：只有在考试结束后或已提交考试后才能查看
-     * 教师：只能查看自己创建的考试
-     * 管理员：可以查看所有考试
+     * 教师/管理员：只能查看自己创建的考试
      */
     public Paper getExamPaper(Long examId, Long userId, String userRole) {
         refreshExamStatuses();
@@ -174,17 +196,8 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
             throw new BusinessException("考试不存在");
         }
 
-        // 管理员可以查看所有考试
-        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
-            Paper paper = paperService.getById(exam.getPaperId());
-            if (paper == null) {
-                throw new BusinessException("试卷不存在");
-            }
-            return paper;
-        }
-
-        // 教师只能查看自己创建的考试
-        if (RoleEnum.TEACHER.getCode().equals(userRole)) {
+        // 教师（含管理员角色）只能查看自己创建的考试
+        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
             if (!exam.getTeacherId().equals(userId)) {
                 throw new BusinessException("无权查看该考试");
             }
@@ -230,8 +243,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
     /**
      * 获取考试回顾所需的完整题目信息（包含正确答案和解析）
      * 学生：只能查看自己已经参加且已提交/已结束的考试的题目
-     * 教师：只能查看自己创建的考试的题目
-     * 管理员：可以查看所有考试的题目
+     * 教师/管理员：只能查看自己创建的考试的题目
      */
     public List<Question> getReviewQuestions(Long examId, Long userId, String userRole) {
         refreshExamStatuses();
@@ -240,20 +252,8 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
             throw new BusinessException("考试不存在");
         }
 
-        // 管理员可以查看所有考试的题目
-        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
-            Paper paper = paperService.getById(exam.getPaperId());
-            if (paper == null || paper.getQuestions() == null) {
-                return List.of();
-            }
-            List<Long> questionIds = paper.getQuestions().stream()
-                    .map(Paper.PaperQuestion::getQuestionId)
-                    .toList();
-            return questionService.listByIds(questionIds);
-        }
-
-        // 教师只能查看自己创建的考试的题目
-        if (RoleEnum.TEACHER.getCode().equals(userRole)) {
+        // 教师（含管理员角色）只能查看自己创建的考试的题目
+        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
             if (!exam.getTeacherId().equals(userId)) {
                 throw new BusinessException("无权查看该考试");
             }
@@ -459,6 +459,12 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         if (now.isAfter(exam.getEndedAt().plusSeconds(30))) {
             throw new BusinessException("考试已结束");
         }
+        if (exam.getDuration() != null) {
+            LocalDateTime durationDeadline = sessionDeadline(session, exam.getDuration());
+            if (now.isAfter(durationDeadline)) {
+                throw new BusinessException("考试已超时");
+            }
+        }
 
         // 验证答案格式
         validateAnswers(answers);
@@ -556,8 +562,92 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
             }
         }
 
+        // 填空题：支持多答案、JSON数组、逗号/分号/换行分隔，并忽略大小写与多余空白
+        if (QuestionTypeEnum.FILL_BLANK.getCode().equals(question.getType())) {
+            return isFillBlankAnswerCorrect(answer, question.getCorrectAnswer());
+        }
+
         // 单选题、判断题：简单字符串比较（忽略大小写和空格）
         return question.getCorrectAnswer().toString().trim().equalsIgnoreCase(answer.trim());
+    }
+
+    private boolean isFillBlankAnswerCorrect(String studentAnswer, Object correctAnswer) {
+        String normalizedStudent = normalizeText(studentAnswer);
+        if (normalizedStudent.isEmpty() || correctAnswer == null) {
+            return false;
+        }
+
+        List<String> candidates = parseFillBlankCandidates(correctAnswer);
+        if (candidates.isEmpty()) {
+            return false;
+        }
+
+        for (String candidate : candidates) {
+            String normalizedCandidate = normalizeText(candidate);
+            if (normalizedCandidate.isEmpty()) {
+                continue;
+            }
+            if (normalizedStudent.equals(normalizedCandidate)) {
+                return true;
+            }
+            if (isNumericEquivalent(normalizedStudent, normalizedCandidate)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<String> parseFillBlankCandidates(Object correctAnswer) {
+        if (correctAnswer == null) {
+            return List.of();
+        }
+        String raw = correctAnswer.toString();
+        if (raw == null) {
+            return List.of();
+        }
+        String value = raw.trim();
+        if (value.isEmpty()) {
+            return List.of();
+        }
+
+        try {
+            if (JSONUtil.isTypeJSONArray(value)) {
+                List<String> arr = JSONUtil.toList(value, String.class);
+                return arr == null ? List.of() : arr.stream().filter(StringUtils::isNotBlank).toList();
+            }
+        } catch (Exception ignored) {
+            // JSON 解析失败走分隔符降级
+        }
+
+        if (value.contains("\n") || value.contains(",") || value.contains("，")
+                || value.contains(";") || value.contains("；") || value.contains("|")) {
+            return java.util.Arrays.stream(value.split("[\\n,，;；|]+"))
+                    .map(String::trim)
+                    .filter(StringUtils::isNotBlank)
+                    .toList();
+        }
+
+        return List.of(value);
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace('\u00A0', ' ')
+                .replace('\u3000', ' ')
+                .trim()
+                .replaceAll("\\s+", " ")
+                .toLowerCase();
+    }
+
+    private boolean isNumericEquivalent(String a, String b) {
+        try {
+            return new BigDecimal(a).compareTo(new BigDecimal(b)) == 0;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private String normalizeTrueFalseAnswer(String answer) {
@@ -596,6 +686,11 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         Exam exam = getById(examId);
         if (exam == null) {
             throw new BusinessException("考试不存在");
+        }
+
+        // 兼容历史数据：空状态按草稿处理
+        if (exam.getStatus() == null) {
+            exam.setStatus(ExamStatusEnum.DRAFT.getCode());
         }
 
         // 仅允许草稿状态发布，避免非法状态跳转
@@ -644,7 +739,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         if (exam == null) {
             throw new BusinessException("考试不存在");
         }
-        if (!RoleEnum.ADMIN.getCode().equals(userRole) && !exam.getTeacherId().equals(userId)) {
+        if (!exam.getTeacherId().equals(userId)) {
             throw new BusinessException("无权操作该考试");
         }
     }
@@ -664,16 +759,23 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 老师给主观题评分
      */
     @Transactional
-    public void gradeSubjectiveAnswers(Long teacherId, GradeSubjectiveRequest request) {
+    public void gradeSubjectiveAnswers(Long operatorId, String operatorRole, GradeSubjectiveRequest request) {
+        if (request == null || request.getExamSessionId() == null) {
+            throw new BusinessException("评分请求参数不完整");
+        }
+        if (request.getGrades() == null || request.getGrades().isEmpty()) {
+            throw new BusinessException("请至少提交一题评分结果");
+        }
+
         // 获取考试记录
         ExamSession session = examSessionService.getById(request.getExamSessionId());
         if (session == null) {
             throw new BusinessException("考试记录不存在");
         }
 
-        // 验证考试是否属于该老师
+        // 验证考试是否属于当前操作人
         Exam exam = getById(session.getExamId());
-        if (exam == null || !exam.getTeacherId().equals(teacherId)) {
+        if (exam == null || !exam.getTeacherId().equals(operatorId)) {
             throw new BusinessException("无权评分该考试");
         }
 
@@ -696,6 +798,10 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         BigDecimal subjectiveScore = BigDecimal.ZERO;
 
         for (GradeSubjectiveRequest.SubjectiveGrade grade : request.getGrades()) {
+            if (grade == null || grade.getQuestionId() == null || grade.getScore() == null) {
+                throw new BusinessException("评分数据不完整");
+            }
+
             // 查找对应的答案
             ExamSession.Answer answer = answers.stream()
                     .filter(a -> a.getQuestionId().equals(grade.getQuestionId()))
@@ -746,7 +852,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
 
         // 计算最终总分（客观题 + 主观题）
-        BigDecimal objectiveScore = session.getScore();
+        BigDecimal objectiveScore = session.getScore() != null ? session.getScore() : BigDecimal.ZERO;
         BigDecimal finalScore = objectiveScore.add(subjectiveScore);
 
         // 保存结果
@@ -758,10 +864,117 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
     }
 
     /**
+     * 批量自动阅卷（按考试）
+     * 用于重跑客观题自动评分逻辑（含填空题），便于回归测试与数据修复
+     */
+    @Transactional
+    public int autoGradeByExam(Long examId, Long operatorId, String operatorRole) {
+        checkOwnership(examId, operatorId, operatorRole);
+
+        Exam exam = getById(examId);
+        if (exam == null) {
+            throw new BusinessException("考试不存在");
+        }
+
+        List<ExamSession> sessions = examSessionService.getByExamId(examId);
+        if (sessions == null || sessions.isEmpty()) {
+            return 0;
+        }
+
+        Paper paper = paperService.getById(exam.getPaperId());
+        if (paper == null) {
+            throw new BusinessException("试卷不存在");
+        }
+
+        List<Long> questionIds = sessions.stream()
+                .filter(s -> s.getAnswers() != null && !s.getAnswers().isEmpty())
+                .flatMap(s -> s.getAnswers().stream())
+                .map(ExamSession.Answer::getQuestionId)
+                .filter(id -> id != null)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, Question> questionMap = questionIds.isEmpty()
+                ? Map.of()
+                : questionService.listByIds(questionIds).stream()
+                .collect(Collectors.toMap(Question::getId, q -> q));
+
+        int processed = 0;
+        for (ExamSession session : sessions) {
+            if (session.getAnswers() == null || session.getAnswers().isEmpty()) {
+                continue;
+            }
+            boolean submittedLike = session.getSubmittedAt() != null
+                    || ExamSessionStatusEnum.SUBMITTED.getCode().equals(session.getStatus())
+                    || ExamSessionStatusEnum.GRADED.getCode().equals(session.getStatus());
+            if (!submittedLike) {
+                continue;
+            }
+            // 兼容历史状态：只要已提交且有答案，都允许重跑自动阅卷
+
+            BigDecimal objectiveScore = BigDecimal.ZERO;
+            BigDecimal gradedEssayScore = BigDecimal.ZERO;
+            boolean hasEssay = false;
+            boolean allEssayGraded = true;
+
+            for (ExamSession.Answer answer : session.getAnswers()) {
+                if (answer == null || answer.getQuestionId() == null) {
+                    continue;
+                }
+                Question question = questionMap.get(answer.getQuestionId());
+                if (question == null) {
+                    continue;
+                }
+
+                answer.setQuestionType(question.getType());
+                if (OBJECTIVE_TYPES.contains(question.getType())) {
+                    boolean isCorrect = checkAnswer(question, answer.getAnswer());
+                    answer.setIsCorrect(isCorrect);
+                    answer.setGradingStatus(GradingStatusEnum.GRADED.getCode());
+                    BigDecimal score = isCorrect ? getQuestionScore(paper, answer.getQuestionId()) : BigDecimal.ZERO;
+                    answer.setScore(score);
+                    objectiveScore = objectiveScore.add(score);
+                } else if (SUBJECTIVE_TYPES.contains(question.getType())) {
+                    hasEssay = true;
+                    if ((GradingStatusEnum.GRADED.getCode().equals(answer.getGradingStatus())
+                            || GradingStatusEnum.COMPLETED.getCode().equals(answer.getGradingStatus()))
+                            && answer.getScore() != null) {
+                        gradedEssayScore = gradedEssayScore.add(answer.getScore());
+                        answer.setIsCorrect(answer.getScore().compareTo(BigDecimal.ZERO) > 0);
+                    } else {
+                        allEssayGraded = false;
+                        answer.setIsCorrect(null);
+                        answer.setScore(null);
+                        answer.setGradingStatus(GradingStatusEnum.PENDING.getCode());
+                    }
+                }
+            }
+
+            if (!hasEssay) {
+                session.setScore(objectiveScore);
+                session.setStatus(ExamSessionStatusEnum.GRADED.getCode());
+                session.setGradingStatus(GradingStatusEnum.COMPLETED.getCode());
+            } else if (allEssayGraded) {
+                session.setScore(objectiveScore.add(gradedEssayScore));
+                session.setStatus(ExamSessionStatusEnum.GRADED.getCode());
+                session.setGradingStatus(GradingStatusEnum.COMPLETED.getCode());
+            } else {
+                session.setScore(objectiveScore);
+                session.setStatus(ExamSessionStatusEnum.SUBMITTED.getCode());
+                session.setGradingStatus(GradingStatusEnum.PENDING.getCode());
+            }
+
+            examSessionService.updateById(session);
+            processed++;
+        }
+
+        return processed;
+    }
+
+    /**
      * 获取考试结果详情
      * 区分客观题和主观题得分
      */
-    public ExamResultResponse getExamResult(Long examSessionId, Long userId) {
+    public ExamResultResponse getExamResult(Long examSessionId, Long userId, String userRole) {
         ExamSession session = examSessionService.getById(examSessionId);
         if (session == null) {
             throw new BusinessException("考试记录不存在");
@@ -772,7 +985,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
             throw new BusinessException("考试不存在");
         }
 
-        // 验证权限（学生只能看自己的，老师可以看自己课程的）
+        // 验证权限（学生只能看自己的；老师/管理员只能看自己课程的）
         if (!session.getStudentId().equals(userId) && !exam.getTeacherId().equals(userId)) {
             throw new BusinessException("无权查看该考试结果");
         }
@@ -847,19 +1060,11 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         Page<Exam> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
         LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
 
-        // 数据隔离：教师只能查看自己创建的考试
-        if (!RoleEnum.ADMIN.getCode().equals(currentUserRole)) {
-            if (teacherId != null && !teacherId.equals(currentUserId)) {
-                // 教师尝试查询其他教师的考试，返回空结果
-                return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
-            }
-            wrapper.eq(Exam::getTeacherId, currentUserId);
-        } else {
-            // 管理员可以筛选教师
-            if (teacherId != null) {
-                wrapper.eq(Exam::getTeacherId, teacherId);
-            }
+        // 数据隔离：管理员与教师都只能查看自己创建的考试
+        if (teacherId != null && !teacherId.equals(currentUserId)) {
+            return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
         }
+        wrapper.eq(Exam::getTeacherId, currentUserId);
 
         // 课程筛选
         if (courseId != null) {

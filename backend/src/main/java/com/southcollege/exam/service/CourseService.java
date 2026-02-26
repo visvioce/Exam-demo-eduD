@@ -10,7 +10,6 @@ import com.southcollege.exam.entity.Course;
 import com.southcollege.exam.entity.CourseMember;
 import com.southcollege.exam.entity.Exam;
 import com.southcollege.exam.entity.User;
-import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.exception.BusinessException;
 import com.southcollege.exam.mapper.CourseMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,14 +183,14 @@ public class CourseService extends ServiceImpl<CourseMapper, Course> {
 
     /**
      * 检查课程所有权
-     * 管理员拥有所有权限，教师只能操作自己创建的课程
+     * 管理员与教师均只能操作自己创建的课程
      */
     public void checkOwnership(Long courseId, Long userId, String userRole) {
         Course course = getById(courseId);
         if (course == null) {
             throw new BusinessException("课程不存在");
         }
-        if (!RoleEnum.ADMIN.getCode().equals(userRole) && !course.getTeacherId().equals(userId)) {
+        if (!course.getTeacherId().equals(userId)) {
             throw new BusinessException("无权操作该课程");
         }
     }
@@ -222,19 +221,11 @@ public class CourseService extends ServiceImpl<CourseMapper, Course> {
         Page<Course> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
         LambdaQueryWrapper<Course> wrapper = new LambdaQueryWrapper<>();
 
-        // 数据隔离：教师只能查看自己创建的课程
-        if (!RoleEnum.ADMIN.getCode().equals(currentUserRole)) {
-            if (teacherId != null && !teacherId.equals(currentUserId)) {
-                // 教师尝试查询其他教师的课程，返回空结果
-                return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
-            }
-            wrapper.eq(Course::getTeacherId, currentUserId);
-        } else {
-            // 管理员可以筛选教师
-            if (teacherId != null) {
-                wrapper.eq(Course::getTeacherId, teacherId);
-            }
+        // 数据隔离：管理员与教师都只能查看自己创建的课程
+        if (teacherId != null && !teacherId.equals(currentUserId)) {
+            return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
         }
+        wrapper.eq(Course::getTeacherId, currentUserId);
 
         // 状态筛选
         if (StringUtils.isNotBlank(status)) {
