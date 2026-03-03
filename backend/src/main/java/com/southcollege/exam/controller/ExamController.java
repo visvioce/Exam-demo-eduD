@@ -24,6 +24,30 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 考试管理控制器
+ * <p>
+ * 提供考试全生命周期管理的 REST API 接口，包括：
+ * <ul>
+ *   <li>考试的增删改查（管理员和教师）</li>
+ *   <li>考试发布和取消</li>
+ *   <li>学生开始考试和提交答卷</li>
+ *   <li>成绩查询和评阅</li>
+ * </ul>
+ * </p>
+ * <p>
+ * <b>权限控制：</b>
+ * <ul>
+ *   <li>管理员：所有操作</li>
+ *   <li>教师：管理自己创建的考试</li>
+ *   <li>学生：参加考试、查看成绩</li>
+ * </ul>
+ * </p>
+ *
+ * @author South College Exam Team
+ * @version 1.0
+ * @since 2024
+ */
 @Tag(name = "考试管理", description = "考试增删改查、发布、开始、提交")
 @RestController
 @RequestMapping("/api/exams")

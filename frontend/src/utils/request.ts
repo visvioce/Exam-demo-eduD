@@ -1,15 +1,36 @@
+/**
+ * HTTP 请求工具模块
+ *
+ * @module utils/request
+ * @description 基于 Axios 封装的 HTTP 请求工具，提供统一的请求拦截、响应处理和错误处理
+ *
+ * 功能特性：
+ * - 自动添加 JWT Token 到请求头
+ * - 统一的响应数据格式处理
+ * - 401 未授权自动跳转登录页
+ * - 统一的错误提示
+ * - 支持文件下载
+ * - 请求超时处理（默认 15 秒）
+ */
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
-// 创建 axios 实例
+/**
+ * Axios 实例配置
+ * baseURL: 从环境变量读取，默认为 '/api'
+ * timeout: 请求超时时间 15 秒
+ */
 const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 15000
 })
 
-// 请求拦截器
+/**
+ * 请求拦截器
+ * 功能：自动为每个请求添加 JWT Token 到 Authorization 请求头
+ */
 service.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
@@ -23,21 +44,28 @@ service.interceptors.request.use(
   }
 )
 
-// 响应拦截器
+/**
+ * 响应拦截器
+ * 功能：
+ * 1. 处理文件下载请求（直接返回原始响应）
+ * 2. 统一处理业务错误码（code !== 200）
+ * 3. 401 未授权时自动登出并跳转登录页
+ * 4. 统一错误提示
+ */
 service.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
 
-    // 如果是文件下载，直接返回
+    // 如果是文件下载，直接返回原始响应
     if (response.config.responseType === 'blob') {
       return response
     }
 
-    // 业务状态码判断
+    // 业务状态码判断（后端统一返回格式：{ code, message, data }）
     if (res.code !== 200) {
       ElMessage.error(res.message || '请求失败')
 
-      // 401: Token 过期或未登录
+      // 401: Token 过期或未登录，清除登录状态并跳转登录页
       if (res.code === 401) {
         const authStore = useAuthStore()
         authStore.logout()

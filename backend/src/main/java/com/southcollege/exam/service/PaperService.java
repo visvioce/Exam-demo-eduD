@@ -21,6 +21,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 试卷服务类
+ * <p>
+ * 负责试卷的增删改查、自动组卷等核心业务逻辑。
+ * 自动组卷功能根据配置的题型、数量、难度等参数，从题库中随机选取题目生成试卷。
+ * </p>
+ *
+ * @author South College Exam Team
+ * @version 1.0
+ * @since 2024
+ */
 @Service
 public class PaperService extends ServiceImpl<PaperMapper, Paper> {
 
@@ -114,6 +125,23 @@ public class PaperService extends ServiceImpl<PaperMapper, Paper> {
         }
     }
 
+    /**
+     * 自动组卷
+     * <p>
+     * 根据请求参数自动从题库中选取题目生成试卷。
+     * 组卷策略：
+     * 1. 支持按题型配置（单选、多选、判断、填空、简答）
+     * 2. 支持按难度筛选（简单、中等、困难）
+     * 3. 支持按学科筛选
+     * 4. 采用随机抽取算法，保证试卷的多样性
+     * 5. 支持两种配置方式：详细配置对象或简单数量配置
+     * </p>
+     *
+     * @param request  组卷请求参数，包含题型配置、难度、学科等信息
+     * @param teacherId 教师ID，用于数据隔离，教师只能使用自己创建的题目
+     * @return 生成的试卷对象，包含题目列表和总分
+     * @throws BusinessException 当题库中符合条件的题目数量不足时抛出异常
+     */
     public Paper autoGenerate(AutoGeneratePaperRequest request, Long teacherId) {
         List<Paper.PaperQuestion> questions = new ArrayList<>();
         BigDecimal totalScore = BigDecimal.ZERO;
@@ -251,6 +279,26 @@ public class PaperService extends ServiceImpl<PaperMapper, Paper> {
         return paper;
     }
 
+    /**
+     * 随机选取题目
+     * <p>
+     * 根据条件从题库中随机选取指定数量的题目。
+     * 算法步骤：
+     * 1. 构建查询条件：题型、教师ID（数据隔离）、学科（可选）、难度（可选）
+     * 2. 查询符合条件的所有题目
+     * 3. 检查题目数量是否足够
+     * 4. 使用 Fisher-Yates 洗牌算法（Collections.shuffle）随机打乱题目顺序
+     * 5. 返回前 count 个题目
+     * </p>
+     *
+     * @param type      题目类型（SINGLE_CHOICE/MULTIPLE_CHOICE/TRUE_FALSE/FILL_BLANK/ESSAY）
+     * @param subject   学科，支持模糊匹配，可为 null
+     * @param difficulty 难度（EASY/MEDIUM/HARD），可为 null
+     * @param count     需要选取的题目数量
+     * @param teacherId 教师ID，用于数据隔离
+     * @return 随机选取的题目列表
+     * @throws BusinessException 当符合条件的题目数量不足时抛出异常
+     */
     private List<Question> selectRandomQuestions(String type, String subject, String difficulty, int count, Long teacherId) {
         LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Question::getType, type);
@@ -269,6 +317,7 @@ public class PaperService extends ServiceImpl<PaperMapper, Paper> {
             throw new BusinessException("题库中" + type + "类型题目不足，当前只有" + allQuestions.size() + "题，需要" + count + "题");
         }
 
+        // 使用 Fisher-Yates 洗牌算法随机打乱题目顺序
         Collections.shuffle(allQuestions);
         return allQuestions.subList(0, count);
     }

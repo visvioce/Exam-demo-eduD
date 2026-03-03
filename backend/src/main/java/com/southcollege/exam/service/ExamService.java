@@ -32,8 +32,32 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 考试服务
- * 负责考试的发布、开始、提交、评分等核心业务逻辑
+ * 考试服务类
+ * <p>
+ * 负责考试的全生命周期管理，包括：
+ * <ul>
+ *   <li>考试的创建、发布、取消</li>
+ *   <li>考试会话的管理（开始、提交）</li>
+ *   <li>自动评分（客观题）和手动评分（主观题）</li>
+ *   <li>成绩统计和查询</li>
+ *   <li>考试状态自动刷新（草稿→已发布→进行中→已结束）</li>
+ * </ul>
+ * </p>
+ * <p>
+ * <b>核心业务流程：</b>
+ * <ol>
+ *   <li>教师创建考试（草稿状态）</li>
+ *   <li>教师发布考试（已发布状态）</li>
+ *   <li>学生在考试时间范围内开始考试（创建考试会话）</li>
+ *   <li>学生答题并提交（自动评分客观题）</li>
+ *   <li>教师评阅主观题（如有）</li>
+ *   <li>公布成绩</li>
+ * </ol>
+ * </p>
+ *
+ * @author South College Exam Team
+ * @version 1.0
+ * @since 2024
  */
 @Service
 @RequiredArgsConstructor
