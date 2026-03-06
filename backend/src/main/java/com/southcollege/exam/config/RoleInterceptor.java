@@ -56,16 +56,9 @@ public class RoleInterceptor implements HandlerInterceptor {
                 .map(RoleEnum::getCode)
                 .collect(Collectors.toSet());
 
-        if (requireRole.requireAll()) {
-            // 需要满足所有角色（单角色场景下与普通检查相同）
-            if (!requiredRoles.contains(userRole)) {
-                throw new BusinessException("权限不足，需要角色: " + requiredRoles);
-            }
-        } else {
-            // 只需满足其中一个角色
-            if (!requiredRoles.contains(userRole)) {
-                throw new BusinessException("权限不足，需要角色: " + requiredRoles + " 之一");
-            }
+        // 检查用户角色是否在所需角色列表中
+        if (!requiredRoles.contains(userRole)) {
+            throw new BusinessException("权限不足，需要角色: " + requiredRoles + " 之一");
         }
 
         return true;

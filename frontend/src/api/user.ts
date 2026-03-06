@@ -1,20 +1,20 @@
 import request from '@/utils/request'
-import type { User, PageRequest, PageResult } from '@/types'
+import type { User, UserResponse, PageRequest, PageResult } from '@/types'
 
 export const userApi = {
   // 分页查询用户
   page(params: PageRequest & { role?: string; status?: string; keyword?: string }) {
-    return request.get<PageResult<User>>('/users/page', { params })
+    return request.get<PageResult<UserResponse>>('/users/page', { params })
   },
 
   // 获取所有用户
   list() {
-    return request.get<User[]>('/users')
+    return request.get<UserResponse[]>('/users')
   },
 
   // 获取用户详情
   getById(id: number) {
-    return request.get<User>(`/users/${id}`)
+    return request.get<UserResponse>(`/users/${id}`)
   },
 
   // 创建用户

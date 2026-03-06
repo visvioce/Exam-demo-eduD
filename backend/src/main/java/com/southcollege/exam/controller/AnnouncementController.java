@@ -37,8 +37,10 @@ public class AnnouncementController {
      * 获取公告列表（所有登录用户可访问）
      */
     @GetMapping
-    public Result<List<Announcement>> list() {
-        List<Announcement> announcements = announcementService.list();
+    public Result<List<Announcement>> list(HttpServletRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        List<Announcement> announcements = announcementService.listVisibleAnnouncements(userId, userRole);
         fillPublisherNames(announcements);
         return Result.success(announcements);
     }
@@ -52,17 +54,30 @@ public class AnnouncementController {
             PageRequest pageRequest,
             @Parameter(description = "搜索关键字") @RequestParam(required = false) String keyword,
             @Parameter(description = "状态筛选") @RequestParam(required = false) String status,
-            @Parameter(description = "类型筛选") @RequestParam(required = false) String type) {
+            @Parameter(description = "类型筛选") @RequestParam(required = false) String type,
+            HttpServletRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
         Page<Announcement> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
         LambdaQueryWrapper<Announcement> wrapper = new LambdaQueryWrapper<>();
+
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            // 管理员可查看全部公告
+        } else if (RoleEnum.TEACHER.getCode().equals(userRole)) {
+            wrapper.and(w -> w.eq(Announcement::getStatus, "PUBLISHED")
+                    .or()
+                    .eq(Announcement::getPublisherId, userId));
+        } else {
+            wrapper.eq(Announcement::getStatus, "PUBLISHED");
+        }
 
         // 关键字搜索
         if (StringUtils.isNotBlank(keyword)) {
             wrapper.like(Announcement::getTitle, keyword);
         }
 
-        // 状态筛选
-        if (StringUtils.isNotBlank(status)) {
+        // 状态筛选：学生只允许看已发布；教师不能筛出别人的草稿
+        if (StringUtils.isNotBlank(status) && !RoleEnum.STUDENT.getCode().equals(userRole)) {
             wrapper.eq(Announcement::getStatus, status);
         }
 
@@ -81,8 +96,10 @@ public class AnnouncementController {
      * 获取公告详情（所有登录用户可访问）
      */
     @GetMapping("/{id}")
-    public Result<Announcement> getById(@PathVariable Long id) {
-        Announcement announcement = announcementService.getById(id);
+    public Result<Announcement> getById(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        Announcement announcement = announcementService.getVisibleAnnouncementById(id, userId, userRole);
         if (announcement != null) {
             fillPublisherNames(List.of(announcement));
         }
@@ -117,7 +134,7 @@ public class AnnouncementController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<Boolean> save(@RequestBody Announcement announcement, HttpServletRequest request) {
         Long publisherId = SecurityUtil.getCurrentUserId(request);
-        announcement.setPublisherId(publisherId);
+        announcementService.prepareForCreate(announcement, publisherId);
         return Result.success(announcementService.save(announcement));
     }
 
@@ -129,8 +146,7 @@ public class AnnouncementController {
     public Result<Boolean> update(@PathVariable Long id, @RequestBody Announcement announcement, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
         String userRole = SecurityUtil.getCurrentUserRole(request);
-        announcementService.checkOwnership(id, userId, userRole);
-        announcement.setId(id);
+        announcementService.prepareForUpdate(id, announcement, userId, userRole);
         return Result.success(announcementService.updateById(announcement));
     }
 

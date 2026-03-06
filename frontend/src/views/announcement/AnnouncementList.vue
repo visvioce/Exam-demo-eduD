@@ -32,7 +32,7 @@
           <div class="filter-tabs">
             <button
               type="button"
-              v-for="item in statusOptions" 
+              v-for="item in visibleStatusOptions" 
               :key="item.value"
               :class="['tab-item', { active: searchForm.status === item.value }]"
               :aria-pressed="searchForm.status === item.value"
@@ -168,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { announcementApi } from '@/api/announcement'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -202,6 +202,13 @@ const statusOptions = [
   { label: '草稿', value: 'DRAFT' },
   { label: '已发布', value: 'PUBLISHED' }
 ]
+
+const visibleStatusOptions = computed(() => {
+  if (hasPermission(['ADMIN', 'TEACHER'])) {
+    return statusOptions
+  }
+  return statusOptions.filter(item => item.value !== 'DRAFT')
+})
 
 const {
   records: announcements,
@@ -320,6 +327,11 @@ function filterTypeChange(value: string) {
 }
 
 function filterStatusChange(value: string) {
+  if (!hasPermission(['ADMIN', 'TEACHER']) && value === 'DRAFT') {
+    searchForm.status = ''
+    void loadFromFirstPage()
+    return
+  }
   void toggleSearch('status', value, '')
 }
 

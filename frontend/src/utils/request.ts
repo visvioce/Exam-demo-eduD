@@ -16,6 +16,7 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import type { ApiResponse } from '@/types'
 
 /**
  * Axios 实例配置
@@ -26,6 +27,8 @@ const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 15000
 })
+
+type ApiEnvelope<T> = ApiResponse<T>
 
 /**
  * 请求拦截器
@@ -53,29 +56,30 @@ service.interceptors.request.use(
  * 4. 统一错误提示
  */
 service.interceptors.response.use(
-  (response: AxiosResponse) => {
-    const res = response.data
+  (response) => {
+    const typedResponse = response as AxiosResponse<ApiEnvelope<unknown> | Blob>
+    const res = typedResponse.data
 
     // 如果是文件下载，直接返回原始响应
-    if (response.config.responseType === 'blob') {
-      return response
+    if (typedResponse.config.responseType === 'blob') {
+      return typedResponse as never
     }
 
     // 业务状态码判断（后端统一返回格式：{ code, message, data }）
-    if (res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
+    if ((res as ApiEnvelope<unknown>).code !== 200) {
+      ElMessage.error((res as ApiEnvelope<unknown>).message || '请求失败')
 
       // 401: Token 过期或未登录，清除登录状态并跳转登录页
-      if (res.code === 401) {
+      if ((res as ApiEnvelope<unknown>).code === 401) {
         const authStore = useAuthStore()
         authStore.logout()
         window.location.href = '/login'
       }
 
-      return Promise.reject(new Error(res.message || 'Error'))
+      return Promise.reject(new Error((res as ApiEnvelope<unknown>).message || 'Error'))
     }
 
-    return res
+    return res as never
   },
   (error) => {
     let message = '请求失败'
@@ -99,7 +103,7 @@ service.interceptors.response.use(
         default:
           message = error.response.data?.message || '请求失败'
       }
-    } else if (error.message.includes('timeout')) {
+    } else if (typeof error.message === 'string' && error.message.includes('timeout')) {
       message = '请求超时'
     }
 
@@ -110,20 +114,20 @@ service.interceptors.response.use(
 
 // 封装请求方法
 export const request = {
-  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return service.get(url, config)
+  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiEnvelope<T>> {
+    return service.get(url, config) as Promise<ApiEnvelope<T>>
   },
 
-  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    return service.post(url, data, config)
+  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiEnvelope<T>> {
+    return service.post(url, data, config) as Promise<ApiEnvelope<T>>
   },
 
-  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    return service.put(url, data, config)
+  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiEnvelope<T>> {
+    return service.put(url, data, config) as Promise<ApiEnvelope<T>>
   },
 
-  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    return service.delete(url, config)
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiEnvelope<T>> {
+    return service.delete(url, config) as Promise<ApiEnvelope<T>>
   }
 }
 

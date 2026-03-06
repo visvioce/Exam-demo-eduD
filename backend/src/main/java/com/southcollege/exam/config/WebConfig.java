@@ -1,9 +1,7 @@
 package com.southcollege.exam.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -15,23 +13,6 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired
     private RoleInterceptor roleInterceptor;
-
-    @Value("${cors.allowed-origins:http://localhost:*,http://127.0.0.1:*}")
-    private String allowedOrigins;
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        // 允许前端开发服务器访问
-        String[] origins = java.util.Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .toArray(String[]::new);
-        registry.addMapping("/**")
-                .allowedOriginPatterns(origins)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true)
-                .maxAge(3600);
-    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

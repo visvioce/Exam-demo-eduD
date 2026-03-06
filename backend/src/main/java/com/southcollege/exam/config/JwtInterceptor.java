@@ -36,6 +36,7 @@ public class JwtInterceptor implements HandlerInterceptor {
         // 检查token是否存在且以Bearer开头
         if (token == null || !token.startsWith("Bearer ")) {
             response.setStatus(401);
+            response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"code\":401,\"message\":\"未提供token\",\"data\":null}");
             return false;
         }
@@ -46,6 +47,7 @@ public class JwtInterceptor implements HandlerInterceptor {
         // 验证token有效性
         if (!jwtUtil.validateToken(token)) {
             response.setStatus(401);
+            response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"code\":401,\"message\":\"token无效或已过期\",\"data\":null}");
             return false;
         }

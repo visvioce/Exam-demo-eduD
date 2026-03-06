@@ -89,7 +89,7 @@
 
     <!-- 创建/编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '添加用户'" width="500px" class="base-dialog">
-      <el-form :model="userForm" :rules="rules" ref="userFormRef" label-width="80px">
+      <el-form :model="userForm" :rules="getFormRules" ref="userFormRef" label-width="80px">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="userForm.username" :disabled="isEdit" placeholder="请输入用户名" />
         </el-form-item>
@@ -132,7 +132,7 @@ import { formatDate, getRoleName, getUserStatusName } from '@/utils/format'
 import { getErrorMessage } from '@/utils/error'
 import { usePagedList } from '@/composables/usePagedList'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { User } from '@/types'
+import type { UserResponse } from '@/types'
 import ActionButtons from '@/components/ActionButtons.vue'
 
 const authStore = useAuthStore()
@@ -161,7 +161,7 @@ const {
   loadFromFirstPage,
   resetSearch,
   toggleSearch
-} = usePagedList<User, { keyword: string; role: string }>({
+} = usePagedList<UserResponse, { keyword: string; role: string }>({
   createSearchForm: () => ({
     keyword: '',
     role: ''
@@ -212,6 +212,20 @@ const rules = reactive<FormRules>({
   ]
 })
 
+// 动态获取表单验证规则（编辑时密码非必填）
+const getFormRules = computed<FormRules>(() => {
+  if (isEdit.value) {
+    return {
+      username: rules.username,
+      nickname: rules.nickname,
+      role: rules.role,
+      status: rules.status
+      // 编辑时不包含 password 规则
+    }
+  }
+  return rules
+})
+
 function getRoleType(role: string) {
   const map: Record<string, string> = {
     ADMIN: 'danger',
@@ -255,7 +269,7 @@ function handleCreate() {
   dialogVisible.value = true
 }
 
-function handleEdit(row: User) {
+function handleEdit(row: UserResponse) {
   isEdit.value = true
   Object.assign(userForm, {
     id: row.id,
@@ -267,7 +281,7 @@ function handleEdit(row: User) {
   dialogVisible.value = true
 }
 
-async function handleDelete(row: User) {
+async function handleDelete(row: UserResponse) {
   try {
     await ElMessageBox.confirm('确定要删除该用户吗？', '提示', {
       confirmButtonText: '确定',
@@ -318,7 +332,7 @@ async function handleSubmit() {
 }
 
 onMounted(() => {
-  loadUsers()
+  void loadUsers()
 })
 </script>
 

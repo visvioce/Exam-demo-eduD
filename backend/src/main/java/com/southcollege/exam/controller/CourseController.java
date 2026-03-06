@@ -4,10 +4,11 @@ import com.southcollege.exam.annotation.RequireRole;
 import com.southcollege.exam.dto.request.PageRequest;
 import com.southcollege.exam.dto.response.PageResult;
 import com.southcollege.exam.dto.response.Result;
+import com.southcollege.exam.dto.response.UserResponse;
 import com.southcollege.exam.entity.Course;
-import com.southcollege.exam.entity.User;
 import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.service.CourseService;
+import com.southcollege.exam.service.UserService;
 import com.southcollege.exam.utils.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,6 +27,7 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private final UserService userService;
 
     /**
      * 分页查询课程（推荐使用）
@@ -179,7 +181,7 @@ public class CourseController {
     }
 
     @GetMapping("/{id}/members")
-    public Result<List<User>> getCourseMembers(@PathVariable Long id, HttpServletRequest request) {
+    public Result<List<UserResponse>> getCourseMembers(@PathVariable Long id, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
         // 只有课程教师和成员可以查看成员列表
         Course course = courseService.getById(id);
@@ -187,7 +189,7 @@ public class CourseController {
             return Result.error("课程不存在");
         }
         if (course.getTeacherId().equals(userId)) {
-            return Result.success(courseService.getCourseMembers(id));
+            return Result.success(userService.convertToResponses(courseService.getCourseMembers(id)));
         }
         // 检查是否是课程成员
         List<Course> myCourses = courseService.getMyCourses(userId);
@@ -195,6 +197,6 @@ public class CourseController {
         if (!isMember) {
             return Result.error("无权查看此课程成员");
         }
-        return Result.success(courseService.getCourseMembers(id));
+        return Result.success(userService.convertToResponses(courseService.getCourseMembers(id)));
     }
 }

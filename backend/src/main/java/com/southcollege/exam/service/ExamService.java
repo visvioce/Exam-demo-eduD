@@ -3,7 +3,6 @@ package com.southcollege.exam.service;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.southcollege.exam.dto.request.GradeSubjectiveRequest;
 import com.southcollege.exam.dto.request.PageRequest;
@@ -25,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -92,25 +92,25 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 根据教师ID获取考试列表
      */
     public List<Exam> getByTeacherId(Long teacherId) {
-        refreshExamStatuses();
         List<Exam> exams = baseMapper.selectByTeacherId(teacherId);
+        applyCurrentStatuses(exams);
         fillExamDisplayFields(exams);
         return exams;
     }
 
     public List<Exam> listWithDisplayFields() {
-        refreshExamStatuses();
         List<Exam> exams = list();
+        applyCurrentStatuses(exams);
         fillExamDisplayFields(exams);
         return exams;
     }
 
     public Exam getByIdWithDisplayFields(Long id) {
-        refreshExamStatuses();
         Exam exam = getById(id);
         if (exam == null) {
             return null;
         }
+        applyCurrentStatus(exam);
         fillExamDisplayFields(List.of(exam));
         return exam;
     }
@@ -135,11 +135,15 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 获取已发布的、未结束的考试
      */
     public List<Exam> getPublishedExams() {
-        refreshExamStatuses();
         List<Exam> exams = lambdaQuery()
-                .in(Exam::getStatus, ExamStatusEnum.PUBLISHED.getCode(), ExamStatusEnum.STARTED.getCode())
+                .notIn(Exam::getStatus, ExamStatusEnum.DRAFT.getCode(), ExamStatusEnum.CANCELLED.getCode())
                 .ge(Exam::getEndedAt, LocalDateTime.now())
                 .list();
+        applyCurrentStatuses(exams);
+        exams = exams.stream()
+                .filter(exam -> ExamStatusEnum.PUBLISHED.getCode().equals(exam.getStatus())
+                        || ExamStatusEnum.STARTED.getCode().equals(exam.getStatus()))
+                .toList();
         fillExamDisplayFields(exams);
         return exams;
     }
@@ -149,11 +153,11 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 检查学生是否已加入课程，返回考试中包含的题目信息（不含正确答案）
      */
     public List<QuestionForExamResponse> getExamQuestions(Long examId, Long studentId) {
-        refreshExamStatuses();
         Exam exam = getById(examId);
         if (exam == null) {
             throw new BusinessException("考试不存在");
         }
+        applyCurrentStatus(exam);
 
         // 检查学生是否已加入课程
         if (!courseService.isCourseMember(exam.getCourseId(), studentId)) {
@@ -214,54 +218,12 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 教师/管理员：只能查看自己创建的考试
      */
     public Paper getExamPaper(Long examId, Long userId, String userRole) {
-        refreshExamStatuses();
-        Exam exam = getById(examId);
-        if (exam == null) {
-            throw new BusinessException("考试不存在");
+        Exam exam = checkReviewPermission(examId, userId, userRole);
+        Paper paper = paperService.getById(exam.getPaperId());
+        if (paper == null) {
+            throw new BusinessException("试卷不存在");
         }
-
-        // 教师（含管理员角色）只能查看自己创建的考试
-        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
-            if (!exam.getTeacherId().equals(userId)) {
-                throw new BusinessException("无权查看该考试");
-            }
-            Paper paper = paperService.getById(exam.getPaperId());
-            if (paper == null) {
-                throw new BusinessException("试卷不存在");
-            }
-            return paper;
-        }
-
-        // 学生需要检查是否已参加且已提交/已结束
-        if (RoleEnum.STUDENT.getCode().equals(userRole)) {
-            // 检查学生是否已加入课程
-            if (!courseService.isCourseMember(exam.getCourseId(), userId)) {
-                throw new BusinessException("请先加入对应课程");
-            }
-
-            // 检查学生是否已经参加过考试
-            ExamSession session = examSessionService.getByExamIdAndStudentId(examId, userId);
-            if (session == null) {
-                throw new BusinessException("您尚未参加该考试");
-            }
-
-            // 检查是否可以查看答案：考试已结束 或 学生已提交
-            boolean canViewAnswers = ExamStatusEnum.ENDED.getCode().equals(exam.getStatus())
-                    || ExamSessionStatusEnum.SUBMITTED.getCode().equals(session.getStatus())
-                    || ExamSessionStatusEnum.GRADED.getCode().equals(session.getStatus());
-
-            if (!canViewAnswers) {
-                throw new BusinessException("考试尚未结束，暂时无法查看答案");
-            }
-
-            Paper paper = paperService.getById(exam.getPaperId());
-            if (paper == null) {
-                throw new BusinessException("试卷不存在");
-            }
-            return paper;
-        }
-
-        throw new BusinessException("无权查看该考试");
+        return paper;
     }
 
     /**
@@ -270,57 +232,50 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 教师/管理员：只能查看自己创建的考试的题目
      */
     public List<Question> getReviewQuestions(Long examId, Long userId, String userRole) {
-        refreshExamStatuses();
+        Exam exam = checkReviewPermission(examId, userId, userRole);
+        Paper paper = paperService.getById(exam.getPaperId());
+        if (paper == null || paper.getQuestions() == null) {
+            return List.of();
+        }
+        List<Long> questionIds = paper.getQuestions().stream()
+                .map(Paper.PaperQuestion::getQuestionId)
+                .toList();
+        return questionService.listByIds(questionIds);
+    }
+
+    /**
+     * 校验回顾/查看权限（教师只能看自己的考试，学生需已提交或考试已结束）
+     * @return 考试实体
+     */
+    private Exam checkReviewPermission(Long examId, Long userId, String userRole) {
         Exam exam = getById(examId);
         if (exam == null) {
             throw new BusinessException("考试不存在");
         }
+        applyCurrentStatus(exam);
 
-        // 教师（含管理员角色）只能查看自己创建的考试的题目
         if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
             if (!exam.getTeacherId().equals(userId)) {
                 throw new BusinessException("无权查看该考试");
             }
-            Paper paper = paperService.getById(exam.getPaperId());
-            if (paper == null || paper.getQuestions() == null) {
-                return List.of();
-            }
-            List<Long> questionIds = paper.getQuestions().stream()
-                    .map(Paper.PaperQuestion::getQuestionId)
-                    .toList();
-            return questionService.listByIds(questionIds);
+            return exam;
         }
 
-        // 学生只能查看自己已经参加且已提交/已结束的考试的题目
         if (RoleEnum.STUDENT.getCode().equals(userRole)) {
-            // 检查学生是否已加入课程
             if (!courseService.isCourseMember(exam.getCourseId(), userId)) {
                 throw new BusinessException("请先加入对应课程");
             }
-
-            // 检查学生是否已经参加过考试
             ExamSession session = examSessionService.getByExamIdAndStudentId(examId, userId);
             if (session == null) {
                 throw new BusinessException("您尚未参加该考试");
             }
-
-            // 检查是否可以查看答案：考试已结束 或 学生已提交
-            boolean canViewAnswers = ExamStatusEnum.ENDED.getCode().equals(exam.getStatus())
+            boolean canView = ExamStatusEnum.ENDED.getCode().equals(exam.getStatus())
                     || ExamSessionStatusEnum.SUBMITTED.getCode().equals(session.getStatus())
                     || ExamSessionStatusEnum.GRADED.getCode().equals(session.getStatus());
-
-            if (!canViewAnswers) {
+            if (!canView) {
                 throw new BusinessException("考试尚未结束，暂时无法查看答案");
             }
-
-            Paper paper = paperService.getById(exam.getPaperId());
-            if (paper == null || paper.getQuestions() == null) {
-                return List.of();
-            }
-            List<Long> questionIds = paper.getQuestions().stream()
-                    .map(Paper.PaperQuestion::getQuestionId)
-                    .toList();
-            return questionService.listByIds(questionIds);
+            return exam;
         }
 
         throw new BusinessException("无权查看该考试");
@@ -331,7 +286,6 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      * 查询学生已加入课程的所有已发布考试，并附带学生的考试记录状态
      */
     public List<Exam> getMyExams(Long studentId) {
-        refreshExamStatuses();
         // 获取学生加入的课程
         List<Course> myCourses = courseService.getMyCourses(studentId);
         List<Long> courseIds = myCourses.stream()
@@ -345,6 +299,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
                 .in(Exam::getCourseId, courseIds)
                 .ne(Exam::getStatus, ExamStatusEnum.DRAFT.getCode())
                 .list();
+        applyCurrentStatuses(exams);
 
         // 查询每个考试的学生考试记录状态
         for (Exam exam : exams) {
@@ -366,11 +321,11 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      */
     @Transactional
     public ExamSession startExam(Long examId, Long studentId) {
-        refreshExamStatuses();
         Exam exam = getById(examId);
         if (exam == null) {
             throw new BusinessException("考试不存在");
         }
+        applyCurrentStatus(exam);
         if (!ExamStatusEnum.PUBLISHED.getCode().equals(exam.getStatus())
                 && !ExamStatusEnum.STARTED.getCode().equals(exam.getStatus())) {
             throw new BusinessException("考试未发布");
@@ -392,12 +347,12 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
 
         // 检查是否已参加过（已提交的不能重复参加）
         ExamSession existing = examSessionService.getByExamIdAndStudentId(examId, studentId);
-        if (existing != null && ExamSessionStatusEnum.SUBMITTED.getCode().equals(existing.getStatus())) {
-            throw new BusinessException("已参加过该考试");
-        }
         if (existing != null) {
-            // 继续考试，返回已有的session
-            return existing;
+            if (ExamSessionStatusEnum.IN_PROGRESS.getCode().equals(existing.getStatus())) {
+                // 继续考试，返回已有的 session
+                return existing;
+            }
+            throw new BusinessException("已参加过该考试");
         }
 
         // 创建新的考试记录
@@ -421,6 +376,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         if (exam == null) {
             throw new BusinessException("考试不存在");
         }
+        applyCurrentStatus(exam);
         if (!ExamStatusEnum.PUBLISHED.getCode().equals(exam.getStatus())
                 && !ExamStatusEnum.STARTED.getCode().equals(exam.getStatus())) {
             throw new BusinessException("考试未发布");
@@ -435,9 +391,6 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
         if (!ExamSessionStatusEnum.IN_PROGRESS.getCode().equals(session.getStatus())) {
             throw new BusinessException("当前考试状态不允许保存");
-        }
-        if (ExamSessionStatusEnum.SUBMITTED.getCode().equals(session.getStatus())) {
-            throw new BusinessException("已提交过该考试，无法保存");
         }
         if (exam.getDuration() != null) {
             LocalDateTime durationDeadline = sessionDeadline(session, exam.getDuration());
@@ -461,6 +414,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         if (exam == null) {
             throw new BusinessException("考试不存在");
         }
+        applyCurrentStatus(exam);
         if (!ExamStatusEnum.PUBLISHED.getCode().equals(exam.getStatus())
                 && !ExamStatusEnum.STARTED.getCode().equals(exam.getStatus())) {
             throw new BusinessException("考试未发布");
@@ -473,9 +427,6 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
         if (!ExamSessionStatusEnum.IN_PROGRESS.getCode().equals(session.getStatus())) {
             throw new BusinessException("当前考试状态不允许提交");
-        }
-        if (ExamSessionStatusEnum.SUBMITTED.getCode().equals(session.getStatus())) {
-            throw new BusinessException("已提交过该考试");
         }
 
         // 检查是否过了考试绝对结束时间（结束后不允许再提交）
@@ -492,6 +443,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
 
         // 验证答案格式
         validateAnswers(answers);
+        answers = normalizeSubmittedAnswers(answers);
 
         // 自动评分（仅客观题）
         BigDecimal objectiveScore = BigDecimal.ZERO;
@@ -758,7 +710,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
     /**
      * 检查考试所有权
      */
-    public void checkOwnership(Long examId, Long userId, String userRole) {
+    public void checkOwnership(Long examId, Long userId) {
         Exam exam = getById(examId);
         if (exam == null) {
             throw new BusinessException("考试不存在");
@@ -893,7 +845,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      */
     @Transactional
     public int autoGradeByExam(Long examId, Long operatorId, String operatorRole) {
-        checkOwnership(examId, operatorId, operatorRole);
+        checkOwnership(examId, operatorId);
 
         Exam exam = getById(examId);
         if (exam == null) {
@@ -1080,32 +1032,50 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      */
     public PageResult<Exam> page(PageRequest pageRequest, Long courseId, Long teacherId, String status,
                                   Long currentUserId, String currentUserRole) {
-        refreshExamStatuses();
-        Page<Exam> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
-        LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
-
-        // 数据隔离：管理员与教师都只能查看自己创建的考试
         if (teacherId != null && !teacherId.equals(currentUserId)) {
             return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
         }
+        LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Exam::getTeacherId, currentUserId);
-
-        // 课程筛选
         if (courseId != null) {
             wrapper.eq(Exam::getCourseId, courseId);
         }
-
-        // 状态筛选
-        if (StringUtils.isNotBlank(status)) {
+        if (StringUtils.isNotBlank(status)
+                && (ExamStatusEnum.DRAFT.getCode().equals(status) || ExamStatusEnum.CANCELLED.getCode().equals(status))) {
             wrapper.eq(Exam::getStatus, status);
         }
 
-        // 排序
-        applySorting(wrapper, pageRequest);
+        List<Exam> exams = list(wrapper);
+        applyCurrentStatuses(exams);
 
-        Page<Exam> result = page(page, wrapper);
-        fillExamDisplayFields(result.getRecords());
-        return PageResult.from(result);
+        if (StringUtils.isNotBlank(status)) {
+            exams = exams.stream()
+                    .filter(exam -> status.equals(exam.getStatus()))
+                    .collect(Collectors.toList());
+        }
+
+        sortExams(exams, pageRequest);
+
+        int current = pageRequest.getCurrent();
+        int size = pageRequest.getSize();
+        int fromIndex = Math.max((current - 1) * size, 0);
+        if (fromIndex >= exams.size()) {
+            return PageResult.empty(current, size);
+        }
+
+        int toIndex = Math.min(fromIndex + size, exams.size());
+        List<Exam> pageRecords = new ArrayList<>(exams.subList(fromIndex, toIndex));
+        fillExamDisplayFields(pageRecords);
+
+        PageResult<Exam> result = new PageResult<>();
+        result.setCurrent(current);
+        result.setSize(size);
+        result.setTotal((long) exams.size());
+        result.setPages((long) Math.ceil((double) exams.size() / size));
+        result.setRecords(pageRecords);
+        result.setHasNext(toIndex < exams.size());
+        result.setHasPrevious(current > 1);
+        return result;
     }
 
     private void fillExamDisplayFields(List<Exam> exams) {
@@ -1138,54 +1108,31 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
     }
 
-    /**
-     * 应用排序规则
-     */
-    private void applySorting(LambdaQueryWrapper<Exam> wrapper, PageRequest pageRequest) {
-        if (StringUtils.isBlank(pageRequest.getOrderBy())) {
-            // 默认按 ID 降序
-            wrapper.orderByDesc(Exam::getId);
-            return;
-        }
+    private void sortExams(List<Exam> exams, PageRequest pageRequest) {
+        String orderBy = StringUtils.isBlank(pageRequest.getOrderBy()) ? "id" : pageRequest.getOrderBy().toLowerCase();
+        Comparator<Exam> comparator = switch (orderBy) {
+            case "createtime", "created_at" ->
+                    Comparator.comparing(Exam::getCreatedAt, Comparator.nullsLast(LocalDateTime::compareTo));
+            case "startedat", "started_at", "starttime" ->
+                    Comparator.comparing(Exam::getStartedAt, Comparator.nullsLast(LocalDateTime::compareTo));
+            case "endedat", "ended_at", "endtime" ->
+                    Comparator.comparing(Exam::getEndedAt, Comparator.nullsLast(LocalDateTime::compareTo));
+            case "totalscore" ->
+                    Comparator.comparing(Exam::getTotalScore, Comparator.nullsLast(BigDecimal::compareTo));
+            case "passscore" ->
+                    Comparator.comparing(Exam::getPassScore, Comparator.nullsLast(BigDecimal::compareTo));
+            case "duration" ->
+                    Comparator.comparing(Exam::getDuration, Comparator.nullsLast(Integer::compareTo));
+            case "status" ->
+                    Comparator.comparing(Exam::getStatus, Comparator.nullsLast(String::compareTo));
+            default ->
+                    Comparator.comparing(Exam::getId, Comparator.nullsLast(Long::compareTo));
+        };
 
-        boolean isAsc = pageRequest.getAsc();
-        String orderBy = pageRequest.getOrderBy().toLowerCase();
-
-        switch (orderBy) {
-            case "id" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getId);
-                else wrapper.orderByDesc(Exam::getId);
-            }
-            case "createtime", "created_at" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getCreatedAt);
-                else wrapper.orderByDesc(Exam::getCreatedAt);
-            }
-            case "startedat", "started_at", "starttime" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getStartedAt);
-                else wrapper.orderByDesc(Exam::getStartedAt);
-            }
-            case "endedat", "ended_at", "endtime" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getEndedAt);
-                else wrapper.orderByDesc(Exam::getEndedAt);
-            }
-            case "totalscore" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getTotalScore);
-                else wrapper.orderByDesc(Exam::getTotalScore);
-            }
-            case "passscore" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getPassScore);
-                else wrapper.orderByDesc(Exam::getPassScore);
-            }
-            case "duration" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getDuration);
-                else wrapper.orderByDesc(Exam::getDuration);
-            }
-            case "status" -> {
-                if (isAsc) wrapper.orderByAsc(Exam::getStatus);
-                else wrapper.orderByDesc(Exam::getStatus);
-            }
-            default -> wrapper.orderByDesc(Exam::getId); // 无效字段使用默认排序
+        if (!Boolean.TRUE.equals(pageRequest.getAsc())) {
+            comparator = comparator.reversed();
         }
+        exams.sort(comparator);
     }
 
     /**
@@ -1207,9 +1154,9 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
                 throw new BusinessException("题目ID不能为空");
             }
 
-            // 检查答案内容是否为空
-            if (answer.getAnswer() == null || answer.getAnswer().trim().isEmpty()) {
-                throw new BusinessException("题目 " + answer.getQuestionId() + " 的答案不能为空");
+            // 空答案按未作答处理，允许前端未来提交全量题目数据
+            if (!hasSubstantiveAnswer(answer)) {
+                continue;
             }
 
             // 如果是多选题，验证答案是否为有效的JSON数组格式
@@ -1224,6 +1171,36 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
                 }
             }
         }
+    }
+
+    private List<ExamSession.Answer> normalizeSubmittedAnswers(List<ExamSession.Answer> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return List.of();
+        }
+        return answers.stream()
+                .filter(this::hasSubstantiveAnswer)
+                .collect(Collectors.toList());
+    }
+
+    private boolean hasSubstantiveAnswer(ExamSession.Answer answer) {
+        if (answer == null || answer.getAnswer() == null) {
+            return false;
+        }
+
+        String value = answer.getAnswer().trim();
+        if (value.isEmpty()) {
+            return false;
+        }
+
+        if (QuestionTypeEnum.MULTIPLE_CHOICE.getCode().equals(answer.getQuestionType()) && JSONUtil.isTypeJSONArray(value)) {
+            try {
+                return !JSONUtil.toList(value, String.class).isEmpty();
+            } catch (Exception ignored) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private LocalDateTime sessionDeadline(ExamSession session, Integer durationMinutes) {
@@ -1260,37 +1237,36 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
     }
 
-    private void refreshExamStatuses() {
-        // 单元测试中的 Spy 场景下 baseMapper 可能未注入，直接跳过状态刷新
-        if (this.baseMapper == null) {
+    private void applyCurrentStatuses(List<Exam> exams) {
+        if (exams == null || exams.isEmpty()) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        exams.forEach(exam -> applyCurrentStatus(exam, now));
+    }
+
+    private void applyCurrentStatus(Exam exam) {
+        applyCurrentStatus(exam, LocalDateTime.now());
+    }
+
+    private void applyCurrentStatus(Exam exam, LocalDateTime now) {
+        if (exam == null) {
+            return;
+        }
+        if (ExamStatusEnum.DRAFT.getCode().equals(exam.getStatus())
+                || ExamStatusEnum.CANCELLED.getCode().equals(exam.getStatus())) {
+            return;
+        }
+        if (exam.getStartedAt() == null || exam.getEndedAt() == null) {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        List<Exam> exams = lambdaQuery()
-                .in(Exam::getStatus, ExamStatusEnum.PUBLISHED.getCode(), ExamStatusEnum.STARTED.getCode())
-                .list();
-
-        for (Exam exam : exams) {
-            if (exam.getStartedAt() == null || exam.getEndedAt() == null) {
-                continue;
-            }
-
-            String targetStatus = exam.getStatus();
-            if (now.isAfter(exam.getEndedAt())) {
-                targetStatus = ExamStatusEnum.ENDED.getCode();
-            } else if (!now.isBefore(exam.getStartedAt())) {
-                targetStatus = ExamStatusEnum.STARTED.getCode();
-            } else {
-                targetStatus = ExamStatusEnum.PUBLISHED.getCode();
-            }
-
-            if (!targetStatus.equals(exam.getStatus())) {
-                Exam toUpdate = new Exam();
-                toUpdate.setId(exam.getId());
-                toUpdate.setStatus(targetStatus);
-                updateById(toUpdate);
-            }
+        if (now.isAfter(exam.getEndedAt())) {
+            exam.setStatus(ExamStatusEnum.ENDED.getCode());
+        } else if (!now.isBefore(exam.getStartedAt())) {
+            exam.setStatus(ExamStatusEnum.STARTED.getCode());
+        } else {
+            exam.setStatus(ExamStatusEnum.PUBLISHED.getCode());
         }
     }
 }

@@ -132,11 +132,15 @@ public class PaperController {
     }
 
     @PostMapping
-    public Result<Boolean> save(@RequestBody Paper paper, HttpServletRequest request) {
-        Long teacherId = SecurityUtil.getCurrentUserId(request);
-        paper.setTeacherId(teacherId);
-        return Result.success(paperService.save(paper));
+public Result<Boolean> save(@RequestBody Paper paper, HttpServletRequest request) {
+    Long teacherId = SecurityUtil.getCurrentUserId(request);
+    paper.setTeacherId(teacherId);
+    // 设置默认状态为草稿
+    if (paper.getStatus() == null) {
+        paper.setStatus("DRAFT");
     }
+    return Result.success(paperService.save(paper));
+}
 
     @PostMapping("/auto-generate")
     public Result<Paper> autoGenerate(@RequestBody com.southcollege.exam.dto.request.AutoGeneratePaperRequest request, HttpServletRequest httpRequest) {

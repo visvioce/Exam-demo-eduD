@@ -51,7 +51,7 @@ public class AuthController {
 
     @Operation(summary = "修改密码", description = "修改当前用户的密码")
     @PostMapping("/change-password")
-    public Result<Void> changePassword(@RequestBody ChangePasswordRequest request, HttpServletRequest httpRequest) {
+    public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request, HttpServletRequest httpRequest) {
         Long userId = SecurityUtil.getCurrentUserId(httpRequest);
         userService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
         return Result.success();

@@ -7,6 +7,7 @@ import com.southcollege.exam.annotation.RequireRole;
 import com.southcollege.exam.dto.request.PageRequest;
 import com.southcollege.exam.dto.response.PageResult;
 import com.southcollege.exam.dto.response.Result;
+import com.southcollege.exam.dto.response.UserResponse;
 import com.southcollege.exam.entity.User;
 import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.service.UserService;
@@ -34,8 +35,8 @@ public class UserController {
 
     @Operation(summary = "获取所有用户", description = "获取系统中所有用户列表")
     @GetMapping
-    public Result<List<User>> list() {
-        return Result.success(userService.list());
+    public Result<List<UserResponse>> list() {
+        return Result.success(userService.convertToResponses(userService.list()));
     }
 
     /**
@@ -43,7 +44,7 @@ public class UserController {
      */
     @Operation(summary = "分页查询用户", description = "支持关键字搜索和角色筛选")
     @GetMapping("/page")
-    public Result<PageResult<User>> page(
+    public Result<PageResult<UserResponse>> page(
             PageRequest pageRequest,
             @Parameter(description = "搜索关键字") @RequestParam(required = false) String keyword,
             @Parameter(description = "角色筛选") @RequestParam(required = false) String role) {
@@ -74,13 +75,13 @@ public class UserController {
         }
 
         Page<User> result = userService.page(page, wrapper);
-        return Result.success(PageResult.from(result));
+        return Result.success(userService.convertToPageResult(PageResult.from(result)));
     }
 
     @Operation(summary = "获取用户详情", description = "根据ID获取用户详细信息")
     @GetMapping("/{id}")
-    public Result<User> getById(@Parameter(description = "用户ID") @PathVariable Long id) {
-        return Result.success(userService.getById(id));
+    public Result<UserResponse> getById(@Parameter(description = "用户ID") @PathVariable Long id) {
+        return Result.success(userService.convertToResponse(userService.getById(id)));
     }
 
     @Operation(summary = "创建用户", description = "新增系统用户，密码将自动加密存储")

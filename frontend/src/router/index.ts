@@ -115,7 +115,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'carousel',
         name: 'CarouselList',
-        component: () => import('@/views/CarouselList.vue'),
+        component: () => import('@/views/carousel/CarouselList.vue'),
         meta: { requiresAuth: true, roles: ['ADMIN'], title: '轮播图管理' }
       },
       {

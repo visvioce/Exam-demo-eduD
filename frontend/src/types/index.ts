@@ -30,8 +30,8 @@ export interface UserResponse {
   username: string
   nickname: string
   avatar?: string
-  role: string
-  status: string
+  role: User['role']
+  status: User['status']
   createdAt?: string
 }
 

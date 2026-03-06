@@ -3,6 +3,7 @@ package com.southcollege.exam.service;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.southcollege.exam.dto.response.LoginResponse;
+import com.southcollege.exam.dto.response.PageResult;
 import com.southcollege.exam.dto.response.UserResponse;
 import com.southcollege.exam.entity.User;
 import com.southcollege.exam.exception.BusinessException;
@@ -215,9 +216,35 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     /**
      * 将User实体转换为UserResponse（隐藏敏感信息）
      */
-    private UserResponse convertToResponse(User user) {
+    public UserResponse convertToResponse(User user) {
+        if (user == null) {
+            return null;
+        }
         UserResponse response = new UserResponse();
         BeanUtils.copyProperties(user, response);
+        return response;
+    }
+
+    public List<UserResponse> convertToResponses(List<User> users) {
+        if (users == null || users.isEmpty()) {
+            return List.of();
+        }
+        return users.stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+    public PageResult<UserResponse> convertToPageResult(PageResult<User> pageResult) {
+        if (pageResult == null) {
+            return PageResult.empty(1, 10);
+        }
+
+        PageResult<UserResponse> response = new PageResult<>();
+        response.setRecords(convertToResponses(pageResult.getRecords()));
+        response.setTotal(pageResult.getTotal());
+        response.setSize(pageResult.getSize());
+        response.setCurrent(pageResult.getCurrent());
+        response.setPages(pageResult.getPages());
         return response;
     }
 }
