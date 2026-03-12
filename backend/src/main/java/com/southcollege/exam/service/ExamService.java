@@ -173,6 +173,9 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
 
         LocalDateTime now = LocalDateTime.now();
+        if (exam.getStartedAt() == null || exam.getEndedAt() == null) {
+            throw new BusinessException("考试时间未设置");
+        }
         if (now.isBefore(exam.getStartedAt())) {
             throw new BusinessException("考试未开始");
         }
@@ -349,10 +352,14 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
 
         // 检查考试时间
         LocalDateTime now = LocalDateTime.now();
+        if (exam.getStartedAt() == null || exam.getEndedAt() == null) {
+            throw new BusinessException("考试时间未设置");
+        }
         if (now.isBefore(exam.getStartedAt())) {
             throw new BusinessException("考试未开始");
         }
-        if (now.isAfter(exam.getEndedAt())) {
+        // 给予30秒宽限时间，避免网络延迟导致的开始考试误判
+        if (now.isAfter(exam.getEndedAt().plusSeconds(30))) {
             throw new BusinessException("考试已结束");
         }
 
@@ -402,6 +409,9 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         if (!ExamStatusEnum.PUBLISHED.getCode().equals(exam.getStatus())
                 && !ExamStatusEnum.STARTED.getCode().equals(exam.getStatus())) {
             throw new BusinessException("考试未发布");
+        }
+        if (exam.getEndedAt() == null) {
+            throw new BusinessException("考试时间未设置");
         }
         if (LocalDateTime.now().isAfter(exam.getEndedAt().plusSeconds(30))) {
             throw new BusinessException("考试已结束，无法继续保存");
@@ -453,6 +463,9 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
 
         // 检查是否过了考试绝对结束时间（结束后不允许再提交）
         LocalDateTime now = LocalDateTime.now();
+        if (exam.getEndedAt() == null) {
+            throw new BusinessException("考试时间未设置");
+        }
         if (now.isAfter(exam.getEndedAt().plusSeconds(30))) {
             throw new BusinessException("考试已结束");
         }

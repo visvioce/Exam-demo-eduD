@@ -104,7 +104,7 @@ public class PaperController {
         if (RoleEnum.ADMIN.getCode().equals(userRole)) {
             return Result.success(paper);
         }
-        if (!paper.getTeacherId().equals(userId)) {
+        if (paper.getTeacherId() == null || !paper.getTeacherId().equals(userId)) {
             throw new com.southcollege.exam.exception.BusinessException("无权查看该试卷");
         }
 
@@ -121,7 +121,7 @@ public class PaperController {
             return Result.success(papers);
         }
         return Result.success(papers.stream()
-                .filter(p -> p.getTeacherId().equals(userId))
+                .filter(p -> p.getTeacherId() != null && p.getTeacherId().equals(userId))
                 .toList());
     }
 

@@ -128,13 +128,14 @@ public class ExamController {
         }
 
         if (RoleEnum.TEACHER.getCode().equals(userRole)) {
-            if (!exam.getTeacherId().equals(userId)) {
+            if (exam.getTeacherId() == null || !exam.getTeacherId().equals(userId)) {
                 throw new com.southcollege.exam.exception.BusinessException("无权查看该考试");
             }
             return Result.success(exam);
         } else if (RoleEnum.STUDENT.getCode().equals(userRole)) {
             // 学生只能查看已发布的考试
-            if (!"PUBLISHED".equals(exam.getStatus()) && !"STARTED".equals(exam.getStatus())) {
+            if (!ExamStatusEnum.PUBLISHED.getCode().equals(exam.getStatus())
+                    && !ExamStatusEnum.STARTED.getCode().equals(exam.getStatus())) {
                 throw new com.southcollege.exam.exception.BusinessException("考试未发布");
             }
             // 检查学生是否已加入考试对应的课程

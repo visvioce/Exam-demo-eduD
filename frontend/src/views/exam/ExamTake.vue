@@ -166,11 +166,15 @@ const endTime = computed(() => {
   // 基于考试时长的结束时间
   const durationEnd = startTime + exam.value.duration * 60 * 1000
 
-  // 基于考试结束时间的结束时间
-  const examEnd = new Date(exam.value.endedAt).getTime()
+  // 基于考试结束时间的结束时间（如果设置了的话）
+  if (exam.value.endedAt) {
+    const examEnd = new Date(exam.value.endedAt).getTime()
+    // 取两者中较小的值，确保不会超过考试结束时间
+    return Math.min(durationEnd, examEnd)
+  }
 
-  // 取两者中较小的值，确保不会超过考试结束时间
-  return Math.min(durationEnd, examEnd)
+  // 如果没有设置考试结束时间，只使用时长计算
+  return durationEnd
 })
 
 const unansweredCount = computed(() => {
