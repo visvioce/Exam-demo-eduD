@@ -56,6 +56,10 @@ public class CourseController {
     @Operation(summary = "获取全部课程", description = "不建议使用，数据量大时会有性能问题")
     public Result<List<Course>> list(HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(courseService.listWithTeacherNames());
+        }
         return Result.success(courseService.getByTeacherId(userId));
     }
 
@@ -88,7 +92,11 @@ public class CourseController {
         Long userId = SecurityUtil.getCurrentUserId(request);
         String userRole = SecurityUtil.getCurrentUserRole(request);
 
-        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(course);
+        }
+
+        if (RoleEnum.TEACHER.getCode().equals(userRole)) {
             if (!course.getTeacherId().equals(userId)) {
                 throw new com.southcollege.exam.exception.BusinessException("无权查看该课程");
             }

@@ -1,5 +1,5 @@
 -- =====================================================
--- 南方学院在线考试系统 - 测试数据（可直接用于联调）
+-- 南方职业学院在线考试系统 - 测试数据（可直接用于联调）
 -- =====================================================
 --
 -- 说明：
@@ -314,7 +314,7 @@ INSERT INTO user_ai_configs (user_id, name, base_url, api_key, models, active_mo
 -- 公告数据
 -- =====================================================
 INSERT INTO announcements (title, content, type, priority, status, publisher_id, published_at) VALUES
-('欢迎使用在线考试系统', '欢迎使用南方学院在线考试系统！支持在线考试、自动阅卷、成绩统计。', 'SYSTEM', 'HIGH', 'PUBLISHED', @admin_id, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+('欢迎使用在线考试系统', '欢迎使用南方职业学院在线考试系统！支持在线考试、自动阅卷、成绩统计。', 'SYSTEM', 'HIGH', 'PUBLISHED', @admin_id, DATE_SUB(NOW(), INTERVAL 5 DAY)),
 ('计算机组成原理期末考试通知', '计算机组成原理期末考试正在进行，请按时参加并提交。', 'EXAM', 'HIGH', 'PUBLISHED', @teacher1_id, DATE_SUB(NOW(), INTERVAL 1 DAY)),
 ('数据结构期中考试成绩公布', '数据结构期中考试成绩已发布，请同学们查看考试结果与解析。', 'EXAM', 'MEDIUM', 'PUBLISHED', @teacher1_id, DATE_SUB(NOW(), INTERVAL 9 DAY)),
 ('系统升级维护通知', '本周末凌晨将进行系统维护，请提前安排考试计划。', 'SYSTEM', 'MEDIUM', 'PUBLISHED', @admin_id, DATE_SUB(NOW(), INTERVAL 2 DAY)),
@@ -324,7 +324,7 @@ INSERT INTO announcements (title, content, type, priority, status, publisher_id,
 -- 轮播图数据（补齐 start_at / end_at）
 -- =====================================================
 INSERT INTO carousels (title, image_url, link_url, description, sort_order, status, start_at, end_at) VALUES
-('在线考试系统上线', 'https://picsum.photos/seed/carousel-1/1200/400', '/', '南方学院在线考试系统正式上线。', 1, 'ACTIVE', DATE_SUB(NOW(), INTERVAL 30 DAY), DATE_ADD(NOW(), INTERVAL 120 DAY)),
+('在线考试系统上线', 'https://picsum.photos/seed/carousel-1/1200/400', '/', '南方职业学院在线考试系统正式上线。', 1, 'ACTIVE', DATE_SUB(NOW(), INTERVAL 30 DAY), DATE_ADD(NOW(), INTERVAL 120 DAY)),
 ('欢迎使用AI出题功能', 'https://picsum.photos/seed/carousel-2/1200/400', '/aiconfig', 'AI智能出题功能已开放，支持多模型切换。', 2, 'ACTIVE', DATE_SUB(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY)),
 ('课程与考试中心', 'https://picsum.photos/seed/carousel-3/1200/400', '/course', '查看课程、加入课程并参与考试。', 3, 'ACTIVE', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL 60 DAY));
 

@@ -81,11 +81,14 @@ public class ExamSessionController {
         }
         wrapper.in(ExamSession::getExamId, teacherExamIds);
 
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(userRole);
+
         // 考试筛选
         if (examId != null) {
             // 验证是否有权限查看该考试
             Exam exam = examService.getById(examId);
-            if (exam == null || !exam.getTeacherId().equals(userId)) {
+            if (exam == null || (!isAdmin && !exam.getTeacherId().equals(userId))) {
                 return Result.error("无权查看该考试的记录");
             }
             wrapper.eq(ExamSession::getExamId, examId);
@@ -121,16 +124,18 @@ public class ExamSessionController {
             return Result.error("记录不存在");
         }
 
-        // 权限校验：只有学生本人或考试教师可以查看
+        // 权限校验：管理员、学生本人或考试教师可以查看
         Exam exam = examService.getById(session.getExamId());
         if (exam == null) {
             return Result.error("考试不存在");
         }
 
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(userRole);
         boolean isTeacher = exam.getTeacherId().equals(userId);
         boolean isOwner = session.getStudentId().equals(userId);
 
-        if (!isTeacher && !isOwner) {
+        if (!isAdmin && !isTeacher && !isOwner) {
             return Result.error("无权查看该考试记录");
         }
 
@@ -145,6 +150,7 @@ public class ExamSessionController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<ExamSession>> getByExamId(@PathVariable Long examId, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         // 验证权限
         Exam exam = examService.getById(examId);
@@ -152,7 +158,8 @@ public class ExamSessionController {
             return Result.error("考试不存在");
         }
 
-        if (!exam.getTeacherId().equals(userId)) {
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(userRole);
+        if (!isAdmin && !exam.getTeacherId().equals(userId)) {
             return Result.error("无权查看该考试的记录");
         }
 
@@ -188,6 +195,7 @@ public class ExamSessionController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<ExamSession>> getPendingGradingByExamId(@PathVariable Long examId, HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         // 验证权限
         Exam exam = examService.getById(examId);
@@ -195,7 +203,8 @@ public class ExamSessionController {
             return Result.error("考试不存在");
         }
 
-        if (!exam.getTeacherId().equals(userId)) {
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(userRole);
+        if (!isAdmin && !exam.getTeacherId().equals(userId)) {
             return Result.error("无权查看该考试的记录");
         }
 

@@ -48,6 +48,10 @@ public class QuestionController {
     @GetMapping
     public Result<List<Question>> list(HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(questionService.list());
+        }
         return Result.success(questionService.getByTeacherId(userId));
     }
 
@@ -58,8 +62,11 @@ public class QuestionController {
             throw new com.southcollege.exam.exception.BusinessException("题目不存在");
         }
 
-        // 数据隔离检查：管理员与教师都只能查看自己的题目
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(question);
+        }
         if (!question.getTeacherId().equals(userId)) {
             throw new com.southcollege.exam.exception.BusinessException("无权查看该题目");
         }
@@ -69,10 +76,12 @@ public class QuestionController {
 
     @GetMapping("/teacher/{teacherId}")
     public Result<List<Question>> getByTeacherId(@PathVariable Long teacherId, HttpServletRequest request) {
-        // 数据隔离：管理员与教师都只能查看自己的题目
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(questionService.getByTeacherId(teacherId));
+        }
         if (!teacherId.equals(userId)) {
-            // 教师尝试查询其他教师的题目
             throw new com.southcollege.exam.exception.BusinessException("无权查询该教师的题目");
         }
 
@@ -81,10 +90,13 @@ public class QuestionController {
 
     @GetMapping("/type/{type}")
     public Result<List<Question>> getByType(@PathVariable String type, HttpServletRequest request) {
-        // 数据隔离：管理员与教师都只能查看自己的题目
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         List<Question> questions = questionService.getByType(type);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(questions);
+        }
         return Result.success(questions.stream()
                 .filter(q -> q.getTeacherId().equals(userId))
                 .toList());

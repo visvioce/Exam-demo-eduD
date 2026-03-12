@@ -3,7 +3,7 @@
     <div class="login-left">
       <div class="left-content">
         <p class="auth-kicker">South College</p>
-        <h1 class="brand-title">南方学院</h1>
+        <h1 class="brand-title">南方职业学院</h1>
         <p class="brand-subtitle">在线考试系统</p>
 
         <div class="quote-container">

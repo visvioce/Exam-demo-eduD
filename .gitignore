@@ -24,6 +24,10 @@ frontend/dist/
 frontend/.vite/
 frontend/.cache/
 
+# Working directory
+working/node_modules/
+working/.venv/
+
 # Backend (Maven)
 backend/target/
 

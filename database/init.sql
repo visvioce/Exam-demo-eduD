@@ -1,5 +1,5 @@
 -- =====================================================
--- 南方学院在线考试系统数据库初始化脚本
+-- 南方职业学院在线考试系统数据库初始化脚本
 -- =====================================================
 --
 -- 说明：此文件仅包含表结构定义，不含示例数据
@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS exam_sessions (
     status ENUM('NOT_STARTED', 'IN_PROGRESS', 'SUBMITTED', 'GRADED') NOT NULL DEFAULT 'NOT_STARTED' COMMENT '状态',
     grading_status ENUM('PENDING', 'GRADING', 'COMPLETED') DEFAULT 'PENDING' COMMENT '评分状态',
     answers JSON COMMENT '答题记录',
+    version INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     FOREIGN KEY (exam_id) REFERENCES exams(id),
     FOREIGN KEY (student_id) REFERENCES users(id),
     UNIQUE KEY uk_exam_student (exam_id, student_id)

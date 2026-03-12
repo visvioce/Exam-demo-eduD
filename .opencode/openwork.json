@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "workspace": {
+    "name": "exam",
+    "createdAt": 1773281904718,
+    "preset": "starter"
+  },
+  "authorizedRoots": [
+    "\\\\wsl.localhost\\Ubuntu\\home\\rain\\exam"
+  ]
+}

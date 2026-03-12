@@ -34,13 +34,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 注册
   async function register(data: RegisterRequest) {
-    try {
-      await authApi.register(data)
-      ElMessage.success('注册成功，请登录')
-      return true
-    } catch (error) {
-      return false
-    }
+    await authApi.register(data)
+    ElMessage.success('注册成功，请登录')
+    return true
   }
 
   // 获取当前用户信息

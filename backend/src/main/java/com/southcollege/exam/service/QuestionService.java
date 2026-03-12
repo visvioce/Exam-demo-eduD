@@ -8,6 +8,7 @@ import com.southcollege.exam.dto.request.PageRequest;
 import com.southcollege.exam.dto.response.PageResult;
 import com.southcollege.exam.entity.Paper;
 import com.southcollege.exam.entity.Question;
+import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.exception.BusinessException;
 import com.southcollege.exam.mapper.QuestionMapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
@@ -41,11 +42,15 @@ public class QuestionService extends ServiceImpl<QuestionMapper, Question> {
         Page<Question> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
         LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<>();
 
-        // 数据隔离：管理员与教师都只能查看自己的题目
-        if (teacherId != null && !teacherId.equals(currentUserId)) {
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(currentUserRole);
+        if (!isAdmin && teacherId != null && !teacherId.equals(currentUserId)) {
             return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
         }
-        wrapper.eq(Question::getTeacherId, currentUserId);
+        if (teacherId != null) {
+            wrapper.eq(Question::getTeacherId, teacherId);
+        } else if (!isAdmin) {
+            wrapper.eq(Question::getTeacherId, currentUserId);
+        }
 
         // 题型筛选
         if (StringUtils.isNotBlank(type)) {
@@ -114,6 +119,9 @@ public class QuestionService extends ServiceImpl<QuestionMapper, Question> {
         Question question = getById(questionId);
         if (question == null) {
             throw new BusinessException("题目不存在");
+        }
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return;
         }
         if (!question.getTeacherId().equals(userId)) {
             throw new BusinessException("无权操作该题目");

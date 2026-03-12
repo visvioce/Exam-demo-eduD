@@ -5,7 +5,9 @@ import com.southcollege.exam.entity.ExamSession;
 import com.southcollege.exam.mapper.ExamSessionMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ExamSessionService extends ServiceImpl<ExamSessionMapper, ExamSession> {
@@ -20,6 +22,23 @@ public class ExamSessionService extends ServiceImpl<ExamSessionMapper, ExamSessi
 
     public ExamSession getByExamIdAndStudentId(Long examId, Long studentId) {
         return baseMapper.selectByExamIdAndStudentId(examId, studentId);
+    }
+
+    /**
+     * 批量查询学生多个考试会话记录
+     * 用于优化N+1查询问题
+     */
+    public Map<Long, ExamSession> getByExamIdsAndStudentId(List<Long> examIds, Long studentId) {
+        if (examIds == null || examIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        List<ExamSession> sessions = baseMapper.selectByExamIdsAndStudentId(examIds, studentId);
+        Map<Long, ExamSession> sessionMap = new HashMap<>();
+        for (ExamSession session : sessions) {
+            sessionMap.put(session.getExamId(), session);
+        }
+        return sessionMap;
     }
 
     /**

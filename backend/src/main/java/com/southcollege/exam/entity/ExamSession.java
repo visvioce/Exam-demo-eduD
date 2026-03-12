@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Data;
 
@@ -17,6 +18,13 @@ public class ExamSession {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+
+    /**
+     * 乐观锁版本号
+     * 用于防止考试提交时的并发问题
+     */
+    @Version
+    private Integer version;
 
     private Long examId;
 

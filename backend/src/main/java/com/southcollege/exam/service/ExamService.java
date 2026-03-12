@@ -18,6 +18,8 @@ import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.exception.BusinessException;
 import com.southcollege.exam.mapper.ExamMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -254,7 +256,11 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
         applyCurrentStatus(exam);
 
-        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return exam;
+        }
+
+        if (RoleEnum.TEACHER.getCode().equals(userRole)) {
             if (!exam.getTeacherId().equals(userId)) {
                 throw new BusinessException("无权查看该考试");
             }
@@ -301,9 +307,13 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
                 .list();
         applyCurrentStatuses(exams);
 
-        // 查询每个考试的学生考试记录状态
+        // 批量查询学生的考试会话记录（优化N+1查询）
+        List<Long> examIds = exams.stream().map(Exam::getId).toList();
+        Map<Long, ExamSession> sessionMap = examSessionService.getByExamIdsAndStudentId(examIds, studentId);
+
+        // 批量设置考试状态
         for (Exam exam : exams) {
-            ExamSession session = examSessionService.getByExamIdAndStudentId(exam.getId(), studentId);
+            ExamSession session = sessionMap.get(exam.getId());
             if (session != null) {
                 exam.setStudentExamStatus(session.getStatus());
             } else {
@@ -318,6 +328,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
     /**
      * 开始考试
      * 检查考试状态、时间、课程成员身份，创建或返回考试记录
+     * 使用数据库唯一约束防止并发的情况下创建重复记录
      */
     @Transactional
     public ExamSession startExam(Long examId, Long studentId) {
@@ -362,15 +373,26 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         session.setStartedAt(now);
         session.setStatus(ExamSessionStatusEnum.IN_PROGRESS.getCode());
         session.setTotalScore(exam.getTotalScore());
-        examSessionService.save(session);
+
+        try {
+            examSessionService.save(session);
+        } catch (DuplicateKeyException e) {
+            // 并发情况下，其他线程已经创建了记录，重新查询并返回
+            existing = examSessionService.getByExamIdAndStudentId(examId, studentId);
+            if (existing != null) {
+                return existing;
+            }
+            throw new BusinessException("创建考试记录失败");
+        }
+
         return session;
     }
 
     /**
      * 自动保存答案
      * 在考试过程中定时保存答案，防止浏览器崩溃导致数据丢失
+     * 注意：此方法不使用事务，因为自动保存只是简单的更新操作
      */
-    @Transactional
     public void autoSaveExam(Long examId, Long studentId, List<ExamSession.Answer> answers) {
         Exam exam = getById(examId);
         if (exam == null) {
@@ -492,13 +514,19 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
             }
         }
 
-        // 保存考试结果
+        // 保存考试结果（使用乐观锁防止并发提交）
         session.setAnswers(answers);
         session.setScore(objectiveScore); // 暂时只保存客观题得分
         session.setSubmittedAt(now);
         session.setStatus(hasSubjective ? ExamSessionStatusEnum.SUBMITTED.getCode() : ExamSessionStatusEnum.GRADED.getCode());
         session.setGradingStatus(hasSubjective ? GradingStatusEnum.PENDING.getCode() : GradingStatusEnum.COMPLETED.getCode());
-        examSessionService.updateById(session);
+
+        try {
+            examSessionService.updateById(session);
+        } catch (OptimisticLockingFailureException e) {
+            // 乐观锁失败，说明其他线程已经提交了
+            throw new BusinessException("该考试已提交，请勿重复提交");
+        }
     }
 
     /**
@@ -654,6 +682,14 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
                 .orElse(BigDecimal.ZERO);
     }
 
+    private String getQuestionType(Paper paper, Long questionId) {
+        if (paper == null || questionId == null) {
+            return null;
+        }
+        Question question = questionService.getById(questionId);
+        return question == null ? null : question.getType();
+    }
+
     /**
      * 发布考试
      */
@@ -709,6 +745,25 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
 
     /**
      * 检查考试所有权
+     * 管理员可以操作所有考试，教师只能操作自己创建的考试
+     */
+    public void checkOwnership(Long examId, Long userId, String userRole) {
+        // 管理员拥有所有权限
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return;
+        }
+
+        Exam exam = getById(examId);
+        if (exam == null) {
+            throw new BusinessException("考试不存在");
+        }
+        if (!exam.getTeacherId().equals(userId)) {
+            throw new BusinessException("无权操作该考试");
+        }
+    }
+
+    /**
+     * 检查考试所有权（简化版本，仅检查是否为创建者）
      */
     public void checkOwnership(Long examId, Long userId) {
         Exam exam = getById(examId);
@@ -751,7 +806,10 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
 
         // 验证考试是否属于当前操作人
         Exam exam = getById(session.getExamId());
-        if (exam == null || !exam.getTeacherId().equals(operatorId)) {
+        if (exam == null) {
+            throw new BusinessException("无权评分该考试");
+        }
+        if (!RoleEnum.ADMIN.getCode().equals(operatorRole) && !exam.getTeacherId().equals(operatorId)) {
             throw new BusinessException("无权评分该考试");
         }
 
@@ -785,11 +843,19 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
                     .orElse(null);
 
             if (answer == null) {
-                continue;
+                answer = new ExamSession.Answer();
+                answer.setQuestionId(grade.getQuestionId());
+                String questionType = getQuestionType(paper, grade.getQuestionId());
+                if (questionType == null) {
+                    throw new BusinessException("题目 " + grade.getQuestionId() + " 类型信息获取失败");
+                }
+                answer.setQuestionType(questionType);
+                answer.setAnswer(null);
+                answers.add(answer);
             }
 
             // 验证是否是主观题
-            if (!SUBJECTIVE_TYPES.contains(answer.getQuestionType())) {
+            if (answer.getQuestionType() == null || !SUBJECTIVE_TYPES.contains(answer.getQuestionType())) {
                 throw new BusinessException("题目 " + grade.getQuestionId() + " 不是主观题，不能手动评分");
             }
 
@@ -845,7 +911,7 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      */
     @Transactional
     public int autoGradeByExam(Long examId, Long operatorId, String operatorRole) {
-        checkOwnership(examId, operatorId);
+        checkOwnership(examId, operatorId, operatorRole);
 
         Exam exam = getById(examId);
         if (exam == null) {
@@ -962,7 +1028,8 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
         }
 
         // 验证权限（学生只能看自己的；老师/管理员只能看自己课程的）
-        if (!session.getStudentId().equals(userId) && !exam.getTeacherId().equals(userId)) {
+        boolean canViewAsTeacher = RoleEnum.ADMIN.getCode().equals(userRole) || exam.getTeacherId().equals(userId);
+        if (!session.getStudentId().equals(userId) && !canViewAsTeacher) {
             throw new BusinessException("无权查看该考试结果");
         }
 
@@ -1032,11 +1099,16 @@ public class ExamService extends ServiceImpl<ExamMapper, Exam> {
      */
     public PageResult<Exam> page(PageRequest pageRequest, Long courseId, Long teacherId, String status,
                                   Long currentUserId, String currentUserRole) {
-        if (teacherId != null && !teacherId.equals(currentUserId)) {
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(currentUserRole);
+        if (!isAdmin && teacherId != null && !teacherId.equals(currentUserId)) {
             return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
         }
         LambdaQueryWrapper<Exam> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Exam::getTeacherId, currentUserId);
+        if (teacherId != null) {
+            wrapper.eq(Exam::getTeacherId, teacherId);
+        } else if (!isAdmin) {
+            wrapper.eq(Exam::getTeacherId, currentUserId);
+        }
         if (courseId != null) {
             wrapper.eq(Exam::getCourseId, courseId);
         }

@@ -10,6 +10,7 @@ import com.southcollege.exam.entity.Course;
 import com.southcollege.exam.entity.CourseMember;
 import com.southcollege.exam.entity.Exam;
 import com.southcollege.exam.entity.User;
+import com.southcollege.exam.enums.RoleEnum;
 import com.southcollege.exam.exception.BusinessException;
 import com.southcollege.exam.mapper.CourseMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -190,6 +191,9 @@ public class CourseService extends ServiceImpl<CourseMapper, Course> {
         if (course == null) {
             throw new BusinessException("课程不存在");
         }
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return;
+        }
         if (!course.getTeacherId().equals(userId)) {
             throw new BusinessException("无权操作该课程");
         }
@@ -221,11 +225,15 @@ public class CourseService extends ServiceImpl<CourseMapper, Course> {
         Page<Course> page = new Page<>(pageRequest.getCurrent(), pageRequest.getSize());
         LambdaQueryWrapper<Course> wrapper = new LambdaQueryWrapper<>();
 
-        // 数据隔离：管理员与教师都只能查看自己创建的课程
-        if (teacherId != null && !teacherId.equals(currentUserId)) {
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(currentUserRole);
+        if (!isAdmin && teacherId != null && !teacherId.equals(currentUserId)) {
             return PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize());
         }
-        wrapper.eq(Course::getTeacherId, currentUserId);
+        if (teacherId != null) {
+            wrapper.eq(Course::getTeacherId, teacherId);
+        } else if (!isAdmin) {
+            wrapper.eq(Course::getTeacherId, currentUserId);
+        }
 
         // 状态筛选
         if (StringUtils.isNotBlank(status)) {

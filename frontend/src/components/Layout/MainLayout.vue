@@ -5,7 +5,7 @@
       <div class="sidebar-content">
         <!-- Logo -->
         <div class="logo-container">
-          <span class="logo-text">南方学院</span>
+          <span class="logo-text">南方职业学院</span>
         </div>
 
         <!-- 菜单 -->

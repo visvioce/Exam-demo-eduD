@@ -143,7 +143,7 @@
     </el-dialog>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑题目' : '添加题目'" width="800px" top="5vh" class="base-dialog">
+    <el-dialog v-model="editDialogVisible" :title="isEdit ? '编辑题目' : '添加题目'" width="800px" top="5vh" class="base-dialog" @close="handleEditDialogClose">
       <el-form :model="questionForm" :rules="rules" ref="questionFormRef" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -367,8 +367,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRoute, useRouter } from 'vue-router'
 import { questionApi } from '@/api/question'
 import { aiApi, type GenerateQuestionRequest, type GeneratedQuestion } from '@/api/ai'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -381,6 +382,8 @@ import ActionButtons from '@/components/ActionButtons.vue'
 import DeleteActionButton from '@/components/DeleteActionButton.vue'
 
 const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -474,7 +477,17 @@ function hasPermission(roles: string[]) {
 
 function canEdit(question: Question) {
   const role = authStore.user?.role
-  return (role === 'ADMIN' || role === 'TEACHER') && question.teacherId === authStore.user?.id
+  if (role === 'ADMIN') {
+    return true
+  }
+  return role === 'TEACHER' && question.teacherId === authStore.user?.id
+}
+
+function clearQuestionRouteState() {
+  if (!route.query.action && route.name === 'QuestionList') {
+    return
+  }
+  router.replace({ name: 'QuestionList' })
 }
 
 function getTypeName(type: string) {
@@ -624,6 +637,37 @@ function handleEdit(row: Question) {
   editDialogVisible.value = true
 }
 
+async function openEditorFromRoute() {
+  const action = route.query.action
+  const id = Number(route.query.id)
+
+  if (route.name === 'QuestionCreate' || action === 'create') {
+    handleCreate()
+    return
+  }
+
+  if (route.name === 'QuestionEdit' || action === 'edit') {
+    if (!Number.isFinite(id) || id <= 0) {
+      ElMessage.error('题目参数无效')
+      clearQuestionRouteState()
+      return
+    }
+    try {
+      const res = await questionApi.getById(id)
+      handleEdit(res.data)
+    } catch (error) {
+      ElMessage.error(getErrorMessage(error, '加载题目失败'))
+      clearQuestionRouteState()
+    }
+  }
+}
+
+function handleEditDialogClose() {
+  if (route.name === 'QuestionCreate' || route.name === 'QuestionEdit' || route.query.action) {
+    clearQuestionRouteState()
+  }
+}
+
 async function handleDelete(row: Question) {
   try {
     await ElMessageBox.confirm('确定要删除该题目吗？', '提示', {
@@ -719,7 +763,7 @@ async function handleSubmit() {
           data.scoringCriteria = questionForm.scoringCriteria
         }
 
-        if (isEdit.value) {
+        if (isEdit.value && questionForm.id > 0) {
           await questionApi.update(questionForm.id, data)
           ElMessage.success('更新成功')
         } else {
@@ -727,6 +771,7 @@ async function handleSubmit() {
           ElMessage.success('创建成功')
         }
         editDialogVisible.value = false
+        clearQuestionRouteState()
         loadQuestions()
       } catch (error: unknown) {
         ElMessage.error(getErrorMessage(error, '操作失败'))
@@ -814,7 +859,7 @@ function handleEditAiQuestion(index: number) {
   aiDialogVisible.value = false
 
   // 将AI生成的题目数据填入编辑表单
-  isEdit.value = true
+  isEdit.value = false
   Object.assign(questionForm, {
     id: 0,
     type: q.type,
@@ -876,7 +921,15 @@ async function handleSaveAllQuestions() {
 onMounted(() => {
   loadQuestions()
   loadSubjects()
+  openEditorFromRoute()
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    openEditorFromRoute()
+  }
+)
 </script>
 
 <style scoped lang="scss">

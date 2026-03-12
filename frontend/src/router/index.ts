@@ -61,13 +61,13 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'question/create',
         name: 'QuestionCreate',
-        component: () => import('@/views/question/QuestionEdit.vue'),
+        redirect: { name: 'QuestionList', query: { action: 'create' } },
         meta: { requiresAuth: true, roles: ['ADMIN', 'TEACHER'], title: '创建题目' }
       },
       {
         path: 'question/:id/edit',
         name: 'QuestionEdit',
-        component: () => import('@/views/question/QuestionEdit.vue'),
+        redirect: to => ({ name: 'QuestionList', query: { action: 'edit', id: String(to.params.id) } }),
         meta: { requiresAuth: true, roles: ['ADMIN', 'TEACHER'], title: '编辑题目' }
       },
       {
@@ -145,7 +145,7 @@ router.beforeEach(async (to, _from, next) => {
 
   // 设置页面标题
   if (to.meta.title) {
-    document.title = `${to.meta.title} - 南方学院在线考试系统`
+    document.title = `${to.meta.title} - 南方职业学院在线考试系统`
   }
 
   // 需要认证的页面

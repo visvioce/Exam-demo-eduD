@@ -61,18 +61,20 @@
               <el-tag :type="getStatusColor(row.status)">{{ getStatusName(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" min-width="180">
+          <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
-              <el-button size="small" type="primary" @click="handleTakeExam(row)"
-                :disabled="!canTakeExam(row)">
-                {{ getExamActionText(row) }}
-              </el-button>
-              <ActionButtons
-                v-if="canViewResult(row)"
-                :show-edit="false"
-                :show-delete="false"
-                @view="handleViewResult(row)"
-              />
+              <div class="table-actions">
+                <el-button size="small" type="primary" @click="handleTakeExam(row)"
+                  :disabled="!canTakeExam(row)">
+                  {{ getExamActionText(row) }}
+                </el-button>
+                <ActionButtons
+                  v-if="canViewResult(row)"
+                  :show-edit="false"
+                  :show-delete="false"
+                  @view="handleViewResult(row)"
+                />
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -103,7 +105,7 @@
               <el-tag :type="getStatusColor(row.status)">{{ getStatusName(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" min-width="240">
+          <el-table-column label="操作" width="280" fixed="right">
             <template #default="{ row }">
               <div class="table-actions">
                 <ActionButtons
@@ -113,9 +115,9 @@
                   @edit="handleEdit(row)"
                   @delete="handleDelete(row)"
                 />
-                <el-button size="small" type="success" @click="handlePublish(row)" 
+                <el-button size="small" type="success" @click="handlePublish(row)"
                   v-if="canEdit(row) && (!row.status || row.status === 'DRAFT')">发布</el-button>
-                <el-button size="small" type="warning" @click="handleCancel(row)" 
+                <el-button size="small" type="warning" @click="handleCancel(row)"
                   v-if="canEdit(row) && ['PUBLISHED', 'STARTED'].includes(row.status)">取消</el-button>
               </div>
             </template>

@@ -1,0 +1,18 @@
+{
+  "name": "working",
+  "version": "1.0.0",
+  "description": "``` exam/ ├── backend/           # Spring Boot 后端 ├── frontend/          # Vue 3 前端 ├── database/          # 数据库脚本 ├── scripts/           # 辅助脚本 ├── start.sh           # 🚀 启动服务（后台运行） ├── stop.sh            # 🛑 停止服务 └── README.md          # 本文档 ```",
+  "main": "generate-ppt.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}

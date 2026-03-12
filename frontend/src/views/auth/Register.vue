@@ -135,14 +135,16 @@ async function handleRegister() {
     if (valid) {
       loading.value = true
       try {
-        const success = await authStore.register({
+        await authStore.register({
           username: registerForm.username,
           password: registerForm.password,
           nickname: registerForm.nickname
         })
-        if (success) {
-          router.push('/login')
-        }
+        // 注册成功，跳转到登录页
+        router.push('/login')
+      } catch (error) {
+        // 错误已在请求拦截器中显示，这里不需要额外处理
+        // 保持表单数据，让用户可以修改后重试
       } finally {
         loading.value = false
       }

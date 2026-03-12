@@ -31,6 +31,10 @@ public class PaperController {
     @GetMapping
     public Result<List<Paper>> list(HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(paperService.listWithCourseNames());
+        }
         return Result.success(paperService.getByTeacherId(userId));
     }
 
@@ -49,14 +53,19 @@ public class PaperController {
             @Parameter(description = "试卷状态") @RequestParam(required = false) String status,
             HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
 
         LambdaQueryWrapper<Paper> wrapper = new LambdaQueryWrapper<>();
 
-        // 数据隔离：管理员与教师都只能查看自己创建的试卷
-        if (teacherId != null && !teacherId.equals(userId)) {
+        boolean isAdmin = RoleEnum.ADMIN.getCode().equals(userRole);
+        if (!isAdmin && teacherId != null && !teacherId.equals(userId)) {
             return Result.success(PageResult.empty(pageRequest.getCurrent(), pageRequest.getSize()));
         }
-        wrapper.eq(Paper::getTeacherId, userId);
+        if (teacherId != null) {
+            wrapper.eq(Paper::getTeacherId, teacherId);
+        } else if (!isAdmin) {
+            wrapper.eq(Paper::getTeacherId, userId);
+        }
 
         // 关键字搜索
         if (StringUtils.isNotBlank(keyword)) {
@@ -91,6 +100,10 @@ public class PaperController {
 
         // 数据隔离检查：管理员与教师都只能查看自己的试卷
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(paper);
+        }
         if (!paper.getTeacherId().equals(userId)) {
             throw new com.southcollege.exam.exception.BusinessException("无权查看该试卷");
         }
@@ -102,8 +115,11 @@ public class PaperController {
     public Result<List<Paper>> getByCourseId(@PathVariable Long courseId, HttpServletRequest request) {
         List<Paper> papers = paperService.getByCourseId(courseId);
 
-        // 数据隔离：管理员与教师都只能查看自己的试卷
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(papers);
+        }
         return Result.success(papers.stream()
                 .filter(p -> p.getTeacherId().equals(userId))
                 .toList());
@@ -122,8 +138,11 @@ public class PaperController {
             throw new com.southcollege.exam.exception.BusinessException("试卷不存在");
         }
 
-        // 权限检查：管理员与教师都只能访问自己的试卷
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(paper);
+        }
         if (!paper.getTeacherId().equals(userId)) {
             throw new com.southcollege.exam.exception.BusinessException("无权查看该试卷");
         }

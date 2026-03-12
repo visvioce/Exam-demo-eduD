@@ -12,7 +12,19 @@
     <el-card class="search-card">
       <el-form :model="searchForm" label-width="80px">
         <el-form-item label="关键字">
-          <el-input v-model="searchForm.keyword" placeholder="公告标题" clearable @input="handleKeywordInput" class="search-control" />
+          <div class="search-input-wrapper">
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="请输入公告标题"
+              clearable
+              @keyup.enter="handleSearch"
+              class="search-control"
+            />
+            <el-button type="primary" @click="handleSearch">
+              <el-icon><Search /></el-icon>
+              搜索
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="类型">
           <div class="filter-tabs">
@@ -172,7 +184,7 @@ import { computed, ref, reactive, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { announcementApi } from '@/api/announcement'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/format'
 import { getErrorMessage } from '@/utils/error'
 import { sanitizeHtml } from '@/utils/sanitize'
@@ -318,7 +330,7 @@ function getPublisherDisplayName(announcement: Announcement | null): string {
   return '-'
 }
 
-function handleKeywordInput() {
+function handleSearch() {
   void loadFromFirstPage()
 }
 
@@ -436,6 +448,16 @@ onMounted(() => {
     white-space: pre-wrap;
     line-height: $line-height-relaxed;
     color: $text-secondary;
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    gap: $spacing-sm;
+    align-items: center;
+
+    .search-control {
+      flex: 1;
+    }
   }
 }
 </style>

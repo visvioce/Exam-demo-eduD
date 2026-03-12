@@ -16,7 +16,7 @@
     <artifactId>exam-system</artifactId>
     <version>1.0.0</version>
     <name>exam-system</name>
-    <description>南方学院在线考试系统</description>
+    <description>南方职业学院在线考试系统</description>
 
     <properties>
         <java.version>17</java.version>

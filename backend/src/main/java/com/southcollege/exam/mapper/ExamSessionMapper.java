@@ -20,6 +20,16 @@ public interface ExamSessionMapper extends BaseMapper<ExamSession> {
     @Select("SELECT * FROM exam_sessions WHERE exam_id = #{examId} AND student_id = #{studentId}")
     ExamSession selectByExamIdAndStudentId(@Param("examId") Long examId, @Param("studentId") Long studentId);
 
+    @Select("<script>" +
+            "SELECT * FROM exam_sessions " +
+            "WHERE student_id = #{studentId} " +
+            "AND exam_id IN " +
+            "<foreach collection='examIds' item='examId' open='(' separator=',' close=')'>" +
+            "#{examId}" +
+            "</foreach>" +
+            "</script>")
+    List<ExamSession> selectByExamIdsAndStudentId(@Param("examIds") List<Long> examIds, @Param("studentId") Long studentId);
+
     @Select("SELECT es.* FROM exam_sessions es " +
             "JOIN exams e ON es.exam_id = e.id " +
             "WHERE e.teacher_id = #{teacherId}")

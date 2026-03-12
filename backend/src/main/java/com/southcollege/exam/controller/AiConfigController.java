@@ -15,6 +15,7 @@ import java.util.List;
 @Tag(name = "AI 配置管理", description = "AI API 配置增删改查")
 @RestController
 @RequestMapping("/api/ai-configs")
+@com.southcollege.exam.annotation.RequireRole({com.southcollege.exam.enums.RoleEnum.ADMIN, com.southcollege.exam.enums.RoleEnum.TEACHER})
 public class AiConfigController {
 
     @Autowired

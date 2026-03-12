@@ -83,6 +83,10 @@ public class ExamController {
     @RequireRole({RoleEnum.ADMIN, RoleEnum.TEACHER})
     public Result<List<Exam>> list(HttpServletRequest request) {
         Long userId = SecurityUtil.getCurrentUserId(request);
+        String userRole = SecurityUtil.getCurrentUserRole(request);
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(examService.listWithDisplayFields());
+        }
         return Result.success(examService.getByTeacherId(userId));
     }
 
@@ -119,8 +123,11 @@ public class ExamController {
         Long userId = SecurityUtil.getCurrentUserId(request);
         String userRole = SecurityUtil.getCurrentUserRole(request);
 
-        if (RoleEnum.TEACHER.getCode().equals(userRole) || RoleEnum.ADMIN.getCode().equals(userRole)) {
-            // 教师（含管理员角色）只能查看自己的考试
+        if (RoleEnum.ADMIN.getCode().equals(userRole)) {
+            return Result.success(exam);
+        }
+
+        if (RoleEnum.TEACHER.getCode().equals(userRole)) {
             if (!exam.getTeacherId().equals(userId)) {
                 throw new com.southcollege.exam.exception.BusinessException("无权查看该考试");
             }
