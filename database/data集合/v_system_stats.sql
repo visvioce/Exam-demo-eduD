@@ -1,0 +1,1 @@
+INSERT INTO exam_system.v_system_stats (total_users, total_teachers, total_students, total_courses, total_exams, total_questions, total_papers, total_sessions, total_announcements, last_updated) VALUES (3, 1, 1, 5, 3, 46, 2, 3, 6, '2026-04-08 19:16:31');

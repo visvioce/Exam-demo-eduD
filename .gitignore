@@ -1,0 +1,51 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Java
+target/
+*.class
+*.jar
+*.war
+*.log
+
+# Node
+node_modules/
+dist/
+.cache/
+
+# Env files (keep .env.example, ignore real ones)
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Build
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backup
+备份/
+
+# 论文相关文件（不上传）
+论文工作/
+答辩材料/
+scripts/ThesisGenerator/
+scripts/create_thesis*.csx
+scripts/thesis_edit.csx
+
+# Trae IDE 配置
+.trae/
+.crush/
+
+# 其他不需要上传的文件
+.opencode/

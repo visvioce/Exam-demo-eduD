@@ -1,0 +1,2 @@
+INSERT INTO exam_system.v_paper_info (paper_id, paper_name, description, course_name, teacher_name, total_score, question_count, type, status, created_at) VALUES (1, '测试用模拟数学测试', '模拟用数学测试', 'Web 开发基础教程', '系统管理员', 50.00, 25, 'MANUAL', 'DRAFT', '2026-04-08 10:41:28');
+INSERT INTO exam_system.v_paper_info (paper_id, paper_name, description, course_name, teacher_name, total_score, question_count, type, status, created_at) VALUES (2, '模拟用例2', '测试用的', 'Web 开发基础教程', '系统管理员', 10.00, 5, 'AUTO', 'DRAFT', '2026-04-08 14:11:26');

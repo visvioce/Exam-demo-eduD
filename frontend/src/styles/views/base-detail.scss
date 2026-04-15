@@ -1,0 +1,16 @@
+@use '../design-tokens.scss' as *;
+
+.base-detail-page {
+  padding: $spacing-xl;
+
+  .page-header {
+    margin-bottom: $spacing-xl;
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .base-detail-page {
+    padding: $spacing-md;
+  }
+}
+

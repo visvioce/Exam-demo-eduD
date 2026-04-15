@@ -1,0 +1,327 @@
+@use '../design-tokens.scss' as *;
+
+// 通用列表页面样式
+.base-list-page {
+  padding: $spacing-xl;
+  min-width: 0;
+
+  // 页面头部
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-xl;
+
+    h2 {
+      font-size: $font-size-3xl;
+      font-weight: $font-weight-medium;
+      color: $text-primary;
+      margin: 0;
+      letter-spacing: -0.5px;
+      line-height: $line-height-tight;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: $spacing-sm;
+
+      .el-button {
+        font-weight: $font-weight-medium;
+      }
+    }
+  }
+
+  // 表格卡片
+  .table-card {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+
+    .el-card__body {
+      padding: 0;
+    }
+
+    .el-table {
+      width: 100%;
+      border: none;
+
+      th.el-table__cell {
+        background: $bg-secondary;
+        color: $text-primary;
+        font-weight: 500;
+        font-size: $font-size-sm;
+        border-bottom: 1px solid $border-color;
+        padding: $spacing-md $spacing-lg;
+      }
+
+      td.el-table__cell {
+        color: $text-secondary;
+        font-size: $font-size-base;
+        border-bottom: 1px solid $border-light;
+        padding: $spacing-md $spacing-lg;
+      }
+
+      :deep(.cell) {
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      &::before {
+        display: none;
+      }
+
+      &--enable-row-hover {
+        .el-table__body tr:hover > td {
+          background: $bg-hover;
+        }
+      }
+
+      &--striped {
+        .el-table__body tr.el-table__row--striped td {
+          background: $bg-secondary;
+        }
+      }
+
+      // 操作列
+      .action-column {
+        .el-button {
+          margin-right: $spacing-xs;
+          font-size: $font-size-xs;
+          padding: $spacing-xs $spacing-sm;
+          height: auto;
+          border-radius: $radius-sm;
+
+          &:last-child {
+            margin-right: 0;
+          }
+        }
+      }
+    }
+  }
+
+  // 搜索卡片
+  .search-card {
+    margin-bottom: $spacing-lg;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+
+    .el-card__body {
+      padding: $spacing-lg;
+    }
+
+    .el-form {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: $spacing-sm $spacing-lg;
+
+      .el-form-item {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .search-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-sm $spacing-lg;
+  }
+
+  .search-control {
+    width: 240px;
+    max-width: 100%;
+    min-width: 180px;
+  }
+
+  .filter-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+
+    .tab-item {
+      appearance: none;
+      background: transparent;
+      padding: $spacing-xs $spacing-md;
+      border: 1px solid $border-color;
+      border-radius: $radius-full;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      cursor: pointer;
+      transition: all $transition-fast;
+      user-select: none;
+      line-height: 1.4;
+      font-family: inherit;
+      text-align: center;
+      white-space: nowrap;
+
+      &:hover {
+        border-color: $text-tertiary;
+        color: $text-primary;
+      }
+
+      &:focus-visible {
+        border-color: $text-primary;
+        box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.12);
+        color: $text-primary;
+        outline: none;
+      }
+
+      &.active {
+        border-color: $text-primary;
+        background: $bg-hover;
+        color: $text-primary;
+        font-weight: $font-weight-medium;
+      }
+    }
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: $spacing-lg;
+  }
+}
+
+// 通用对话框样式
+.base-dialog {
+  :deep(.el-dialog__body) {
+    padding: $spacing-xl;
+    max-height: 68vh;
+    overflow-y: auto;
+  }
+
+  :deep(.el-dialog__header) {
+    border-bottom: 1px solid $border-light;
+    padding: $spacing-lg $spacing-xl;
+
+    .el-dialog__title {
+      font-size: $font-size-xl;
+      font-weight: 600;
+      color: $text-primary;
+      letter-spacing: -0.01em;
+    }
+  }
+
+  :deep(.el-dialog__footer) {
+    padding: $spacing-lg $spacing-xl;
+    border-top: 1px solid $border-light;
+
+    .el-button {
+      margin-right: $spacing-sm;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
+  :deep(.el-form) {
+    .el-form-item {
+      margin-bottom: $spacing-lg;
+
+      .el-form-item__label {
+        color: $text-tertiary;
+        font-weight: 500;
+      }
+
+      .el-input,
+      .el-textarea,
+      .el-select,
+      .el-date-picker {
+        .el-input__wrapper,
+        .el-textarea__inner {
+          border-radius: $radius-sm;
+          border: 1px solid $border-input;
+
+          &:hover {
+            border-color: $text-tertiary;
+          }
+
+          &.is-focus {
+            border-color: $text-primary;
+            box-shadow: none;
+          }
+        }
+      }
+
+      .el-input-number {
+        .el-input__wrapper {
+          border-radius: $radius-sm;
+          border: 1px solid $border-input;
+
+          &:hover {
+            border-color: $text-tertiary;
+          }
+
+          &.is-focus {
+            border-color: $text-primary;
+            box-shadow: none;
+          }
+        }
+      }
+    }
+
+    .el-form-item:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// 响应式
+@media (max-width: $breakpoint-md) {
+  .base-list-page {
+    padding: $spacing-md;
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-md;
+
+      h2 {
+        font-size: $font-size-2xl;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+
+    .table-card {
+      .el-table {
+        th, td {
+          padding: $spacing-sm $spacing-md;
+        }
+
+        // 小屏幕隐藏某些列
+        .hide-mobile {
+          display: none;
+        }
+      }
+    }
+
+    .search-card {
+      .el-card__body {
+        padding: $spacing-md;
+      }
+
+      .el-form {
+        gap: $spacing-sm;
+
+        .el-form-item {
+          width: 100%;
+        }
+      }
+
+      .search-control {
+        width: 100%;
+      }
+    }
+  }
+}

@@ -1,0 +1,181 @@
+@use '../design-tokens.scss' as *;
+
+.login-container,
+.register-container {
+  display: flex;
+  min-height: 100vh;
+  background: $bg-primary;
+}
+
+.login-left,
+.register-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-right,
+.register-right {
+  flex: 0 0 55%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-primary;
+  padding: $spacing-3xl;
+  overflow-y: auto;
+}
+
+.login-content,
+.register-content {
+  width: 100%;
+  max-width: 450px;
+}
+
+.login-header,
+.register-header {
+  margin-bottom: $spacing-2xl;
+
+  h2 {
+    font-size: 32px;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 $spacing-md 0;
+    letter-spacing: -0.5px;
+  }
+}
+
+.login-subtitle,
+.register-subtitle {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+  margin: 0;
+}
+
+.login-form,
+.register-form {
+  .form-item {
+    margin-bottom: $spacing-xl;
+
+    :deep(.el-input__wrapper) {
+      padding: 0 $spacing-lg;
+      border-radius: $radius-lg;
+      background: $bg-primary;
+      border: 1px solid $border-color;
+      box-shadow: none;
+      transition: all $transition-base;
+
+      &:hover {
+        border-color: $text-tertiary;
+      }
+
+      &.is-focus {
+        border-color: $text-primary;
+      }
+
+      .el-input__inner {
+        height: 48px;
+        line-height: 48px;
+        color: $text-primary;
+        font-size: $font-size-base;
+      }
+
+      .el-input__inner::placeholder {
+        color: $text-quaternary;
+      }
+
+      .el-input__prefix {
+        color: $text-tertiary;
+      }
+    }
+
+    :deep(.el-form-item__error) {
+      color: $danger;
+      font-size: $font-size-xs;
+      padding-top: $spacing-sm;
+    }
+  }
+}
+
+.login-btn,
+.register-btn {
+  width: 100%;
+  height: 48px;
+  font-size: $font-size-base;
+  font-weight: 600;
+  background: $primary;
+  border-color: $primary;
+  border-radius: $radius-lg;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $gray-900;
+    border-color: $gray-900;
+  }
+
+  &.is-loading {
+    opacity: 0.8;
+  }
+}
+
+.login-footer,
+.register-footer {
+  margin-top: $spacing-xl;
+  text-align: center;
+}
+
+.register-link,
+.login-link {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+  transition: color $transition-base;
+
+  &:hover {
+    color: $text-primary;
+  }
+}
+
+@media (max-width: $breakpoint-lg) {
+  .login-container,
+  .register-container {
+    flex-direction: column;
+  }
+
+  .login-left,
+  .register-left {
+    width: 100%;
+    min-height: 34vh;
+    padding: $spacing-2xl $spacing-xl;
+  }
+
+  .login-right,
+  .register-right {
+    width: 100%;
+    padding: $spacing-2xl $spacing-xl;
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .login-left,
+  .register-left {
+    min-height: 28vh;
+    padding: $spacing-xl $spacing-lg;
+  }
+
+  .login-right,
+  .register-right {
+    padding: $spacing-xl $spacing-lg;
+  }
+
+  .login-header,
+  .register-header {
+    margin-bottom: $spacing-xl;
+
+    h2 {
+      font-size: 28px;
+    }
+  }
+}

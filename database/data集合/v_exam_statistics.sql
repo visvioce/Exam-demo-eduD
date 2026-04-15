@@ -1,0 +1,3 @@
+INSERT INTO exam_system.v_exam_statistics (exam_id, exam_title, course_name, total_participants, graded_count, avg_score, max_score, min_score) VALUES (1, '234242', 'Web 开发基础教程', 1, 1, 10.000000, 10.00, 10.00);
+INSERT INTO exam_system.v_exam_statistics (exam_id, exam_title, course_name, total_participants, graded_count, avg_score, max_score, min_score) VALUES (2, '123123131', 'Web 开发基础教程', 1, 1, 10.000000, 10.00, 10.00);
+INSERT INTO exam_system.v_exam_statistics (exam_id, exam_title, course_name, total_participants, graded_count, avg_score, max_score, min_score) VALUES (3, '模拟考试用', 'Web 开发基础教程', 1, 1, 0.000000, 0.00, 0.00);
